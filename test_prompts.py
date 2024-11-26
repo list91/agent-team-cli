@@ -124,7 +124,17 @@ Exit code: 0
 """
 }
 
+def test_streaming_response():
+    print("\nTesting streaming response with a complex question...")
+    prompt = """Please write a detailed explanation of how neural networks work. 
+    Break it down into multiple paragraphs and include technical details."""
+    
+    print("Starting response (you should see it appear gradually):\n")
+    result = query_ollama(prompt)
+    print(f"\nResponse status: {result}")
+
 if __name__ == "__main__":
     # Тестируем каждый промпт
     for prompt_name, test_input in test_cases.items():
         test_prompt(prompt_name, test_input)
+    test_streaming_response()

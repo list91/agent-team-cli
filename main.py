@@ -7,7 +7,7 @@ def query_ollama(prompt):
     payload = json.dumps({
         "model": "llama3.2",  # using your installed model
         "prompt": prompt,
-        "stream": False
+        "stream": True
     })
     
     headers = {
@@ -19,8 +19,19 @@ def query_ollama(prompt):
         response = conn.getresponse()
         
         if response.status == 200:
-            data = json.loads(response.read().decode())
-            return data.get('response', 'No response received')
+            while True:
+                chunk = response.readline()
+                if not chunk:
+                    break
+                try:
+                    data = json.loads(chunk.decode())
+                    if 'response' in data:
+                        print(data['response'], end='', flush=True)
+                    if data.get('done', False):
+                        break
+                except json.JSONDecodeError:
+                    continue
+            return "Response completed"
         else:
             return f"Error: {response.status} - {response.reason}"
             
