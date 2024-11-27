@@ -195,11 +195,43 @@ function getScripts() {
         }
 
         function editMessage(messageId) {
-            const currentBranch = getCurrentBranch();
-            const messageIndex = currentBranch.messages.findIndex(m => m.id === messageId);
-            const message = currentBranch.messages[messageIndex];
+            // Функция для поиска сообщения во всех ветках
+            function findMessageInAllBranches(id) {
+                // Проход по всем веткам в chatBranches
+                for (const branchKey in chatBranches.branches) {
+                    const branch = chatBranches.branches[branchKey];
+                    
+                    // Поиск в основных сообщениях ветки
+                    const directMessage = branch.messages.find(m => m.id === id);
+                    if (directMessage) return { branch, message: directMessage };
+                    
+                    // Поиск во вложенных ветках
+                    if (branch.branches) {
+                        for (const parentId in branch.branches) {
+                            const subBranches = branch.branches[parentId];
+                            for (const subBranchKey in subBranches) {
+                                const subBranch = subBranches[subBranchKey];
+                                const subMessage = subBranch.messages.find(m => m.id === id);
+                                if (subMessage) return { branch: subBranch, message: subMessage };
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+
+            const messageLocation = findMessageInAllBranches(messageId);
             
-            messageInput.value = message.content;
+            if (!messageLocation) {
+                console.error('Message not found across all branches', messageId);
+                return;
+            }
+
+            const { message } = messageLocation;
+            
+            // Проверяем наличие content, используем text как альтернативу
+            const messageContent = message.content || message.text || '';
+            messageInput.value = messageContent;
             editingMessageId = messageId;
             messageInput.focus();
         }
@@ -214,48 +246,62 @@ function getScripts() {
                 return;
             }
             
-            if (editingMessageId) {
-                const messageIndex = activeBranch.messages.findIndex(m => m.id === editingMessageId);
-                
-                if (messageIndex !== -1) {
-                    const newBranchIndex = createNewBranch(editingMessageId, content);
-                    if (newBranchIndex) {
-                        console.log('Creating new branch:', {
-                            messageId: editingMessageId,
-                            newBranchIndex,
-                            content,
-                            currentPath: chatBranches.currentPath
-                        });
-                        
-                        switchBranch(editingMessageId, newBranchIndex);
-                        editingMessageId = null;
-                        messageInput.value = '';
-                        
-                        vscode.postMessage({ type: 'message', text: content });
+            // Функция для поиска сообщения во всех ветках
+            function findMessageInAllBranches(id) {
+                for (const branchKey in chatBranches.branches) {
+                    const branch = chatBranches.branches[branchKey];
+                    
+                    const directMessage = branch.messages.find(m => m.id === id);
+                    if (directMessage) return { branch, message: directMessage, messageIndex: branch.messages.indexOf(directMessage) };
+                    
+                    if (branch.branches) {
+                        for (const parentId in branch.branches) {
+                            const subBranches = branch.branches[parentId];
+                            for (const subBranchKey in subBranches) {
+                                const subBranch = subBranches[subBranchKey];
+                                const subMessageIndex = subBranch.messages.findIndex(m => m.id === id);
+                                if (subMessageIndex !== -1) {
+                                    return { 
+                                        branch: subBranch, 
+                                        message: subBranch.messages[subMessageIndex], 
+                                        messageIndex: subMessageIndex 
+                                    };
+                                }
+                            }
+                        }
                     }
                 }
+                return null;
+            }
+            
+            if (editingMessageId) {
+                const messageLocation = findMessageInAllBranches(editingMessageId);
+                
+                if (messageLocation) {
+                    const { branch, message, messageIndex } = messageLocation;
+                    
+                    const newBranchIndex = createNewBranch(editingMessageId, content);
+                    
+                    // Обновляем оригинальное сообщение
+                    message.content = content;
+                    message.text = content;
+                }
+                
+                editingMessageId = null;
             } else {
+                // Создание нового сообщения
                 const newMessage = {
                     id: generateMessageId(),
                     content: content,
+                    text: content,
                     sender: 'user'
                 };
                 
-                console.log('Adding message to branch:', {
-                    messageId: newMessage.id,
-                    content,
-                    currentPath: chatBranches.currentPath,
-                    branchMessages: activeBranch.messages.length,
-                    branchDepth: chatBranches.currentPath.length - 1
-                });
-                
                 activeBranch.messages.push(newMessage);
-                messageInput.value = '';
-                
-                renderChat();
-                
-                vscode.postMessage({ type: 'message', text: content });
             }
+            
+            messageInput.value = '';
+            renderChat();
         }
 
         function startNewChat() {
