@@ -47,6 +47,10 @@ function getWebviewContent() {
                 max-width: 100%;
                 overflow-wrap: break-word;
                 hyphens: auto;
+                transition: opacity 0.3s ease;
+            }
+            .message.inactive {
+                opacity: 0.5;
             }
             .user-message {
                 background-color: var(--vscode-editor-background);
@@ -81,15 +85,45 @@ function getWebviewContent() {
             .branch-nav {
                 display: inline-flex;
                 gap: 2px;
+                align-items: center;
             }
             .branch-nav button {
                 padding: 2px 5px;
                 min-width: 24px;
                 cursor: pointer;
+                opacity: 0.6;
+                transition: opacity 0.3s ease;
             }
             .branch-nav button.active {
                 background: var(--vscode-button-background);
                 color: var(--vscode-button-foreground);
+                opacity: 1;
+            }
+            .branch-nav button:hover {
+                opacity: 1;
+            }
+            .branch-nav .nav-arrows {
+                display: flex;
+                gap: 2px;
+                margin-right: 4px;
+            }
+            .branch-nav .nav-arrow {
+                padding: 2px 4px;
+                cursor: pointer;
+                opacity: 0.6;
+                transition: opacity 0.3s ease;
+                background: var(--vscode-button-background);
+                color: var(--vscode-button-foreground);
+                border: none;
+                border-radius: 3px;
+                font-size: 10px;
+            }
+            .branch-nav .nav-arrow:hover {
+                opacity: 1;
+            }
+            .branch-nav .nav-arrow:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
             }
             #newChatBtn {
                 margin-left: 10px;
@@ -100,7 +134,7 @@ function getWebviewContent() {
         <div id="chatBox"></div>
         <div class="input-container">
             <input type="text" id="messageInput" placeholder="Введите сообщение...">
-            <button onclick="sendMessage()">Send</button>
+            <button onclick="handleMessageSubmit()">Send</button>
             <button id="newChatBtn" onclick="startNewChat()">New Chat</button>
         </div>
         <script>
@@ -110,10 +144,11 @@ function getWebviewContent() {
 
             // Структура для хранения веток чата
             let chatBranches = {
-                currentBranch: 1,
+                currentPath: [1],  // Путь к текущей ветке [главная_ветка, под_ветка1, под_ветка2, ...]
                 branches: {
                     1: {
-                        messages: []
+                        messages: [],
+                        branches: {}  // Подветки для каждого сообщения: { messageId: { branchId: { messages: [], branches: {} } } }
                     }
                 }
             };
@@ -124,152 +159,253 @@ function getWebviewContent() {
                 return Date.now() + Math.random().toString(36).substr(2, 9);
             }
 
-            function sendMessage() {
-                const message = messageInput.value;
-                if (message.trim()) {
-                    const messageId = generateMessageId();
-                    const messageObj = {
-                        id: messageId,
-                        text: message,
+            function getCurrentBranch() {
+                let currentBranch = chatBranches.branches[chatBranches.currentPath[0]];
+                for (let i = 1; i < chatBranches.currentPath.length; i++) {
+                    const messageId = currentBranch.messages[i - 1].id;
+                    currentBranch = currentBranch.branches[messageId][chatBranches.currentPath[i]];
+                }
+                return currentBranch;
+            }
+
+            function getMaxBranchIndex(branches) {
+                if (!branches || Object.keys(branches).length === 0) return 1;
+                return Math.max(...Object.keys(branches).map(k => 
+                    Object.keys(branches[k]).map(b => parseInt(b))
+                ).flat());
+            }
+
+            function createNewBranch(messageId, content) {
+                const currentBranch = getCurrentBranch();
+                const messageIndex = currentBranch.messages.findIndex(m => m.id === messageId);
+                
+                // Если веток еще нет, создаем первую (индекс 1) и вторую (индекс 2)
+                if (!currentBranch.branches[messageId]) {
+                    currentBranch.branches[messageId] = {
+                        "1": {
+                            messages: currentBranch.messages.slice(messageIndex + 1),
+                            branches: {}
+                        },
+                        "2": {
+                            messages: [{
+                                id: Date.now().toString(),
+                                content: content,
+                                sender: 'user'
+                            }],
+                            branches: {}
+                        }
+                    };
+                    return 2; // Возвращаем индекс новой ветки
+                } else {
+                    // Если ветки уже есть, создаем новую с индексом max + 1
+                    const maxIndex = getMaxBranchIndex(currentBranch.branches);
+                    const newIndex = maxIndex + 1;
+                    
+                    currentBranch.branches[messageId][newIndex] = {
+                        messages: [{
+                            id: Date.now().toString(),
+                            content: content,
+                            sender: 'user'
+                        }],
+                        branches: {}
+                    };
+                    return newIndex;
+                }
+            }
+
+            function switchBranch(messageId, branchIndex) {
+                const currentBranch = getCurrentBranch();
+                const messageIndex = currentBranch.messages.findIndex(m => m.id === messageId);
+                
+                // Обновляем путь до точки ветвления
+                const newPath = [...chatBranches.currentPath.slice(0, messageIndex + 1)];
+                // Добавляем индекс новой ветки
+                newPath.push(branchIndex.toString());
+                
+                chatBranches.currentPath = newPath;
+                renderChat();
+            }
+
+            function editMessage(messageId) {
+                const currentBranch = getCurrentBranch();
+                const messageIndex = currentBranch.messages.findIndex(m => m.id === messageId);
+                const message = currentBranch.messages[messageIndex];
+                
+                messageInput.value = message.content;
+                editingMessageId = messageId;
+                messageInput.focus();
+            }
+
+            function handleMessageSubmit() {
+                const content = messageInput.value.trim();
+                if (!content) return;
+                
+                if (editingMessageId) {
+                    const currentBranch = getCurrentBranch();
+                    const messageIndex = currentBranch.messages.findIndex(m => m.id === editingMessageId);
+                    
+                    if (messageIndex !== -1) {
+                        // Создаем новую ветку с измененным сообщением
+                        const newBranchIndex = createNewBranch(editingMessageId, content);
+                        // Переключаемся на новую ветку
+                        switchBranch(editingMessageId, newBranchIndex);
+                        
+                        editingMessageId = null;
+                        messageInput.value = '';
+                        
+                        // Отправляем сообщение боту
+                        sendToBotAndAppend(content);
+                    }
+                } else {
+                    const currentBranch = getCurrentBranch();
+                    const newMessage = {
+                        id: Date.now().toString(),
+                        content: content,
                         sender: 'user'
                     };
-
-                    if (editingMessageId) {
-                        // Создаем новую ветку
-                        const newBranchId = Object.keys(chatBranches.branches).length + 1;
-                        chatBranches.branches[newBranchId] = {
-                            messages: []
-                        };
-
-                        // Копируем сообщения до редактируемого
-                        const originalBranch = chatBranches.branches[chatBranches.currentBranch].messages;
-                        const messageIndex = originalBranch.findIndex(m => m.id === editingMessageId);
-                        
-                        chatBranches.branches[newBranchId].messages = [
-                            ...originalBranch.slice(0, messageIndex),
-                            messageObj
-                        ];
-
-                        chatBranches.currentBranch = newBranchId;
-                        editingMessageId = null;
-                    } else {
-                        chatBranches.branches[chatBranches.currentBranch].messages.push(messageObj);
-                    }
-
-                    renderChat();
-                    vscode.postMessage({ type: 'message', text: message });
+                    
+                    currentBranch.messages.push(newMessage);
                     messageInput.value = '';
+                    
+                    renderChat();
+                    
+                    // Отправляем сообщение боту
+                    sendToBotAndAppend(content);
                 }
             }
 
             function startNewChat() {
                 chatBranches = {
-                    currentBranch: 1,
+                    currentPath: [1],
                     branches: {
                         1: {
-                            messages: []
+                            messages: [],
+                            branches: {}
                         }
                     }
                 };
                 renderChat();
             }
 
-            function editMessage(messageId) {
-                const branch = chatBranches.branches[chatBranches.currentBranch];
-                const message = branch.messages.find(m => m.id === messageId);
-                if (message) {
-                    editingMessageId = messageId;
-                    messageInput.value = message.text;
-                    messageInput.focus();
-                }
-            }
-
-            function switchBranch(branchId) {
-                chatBranches.currentBranch = branchId;
-                renderChat();
-            }
-
             function renderChat() {
                 chatBox.innerHTML = '';
-                const currentBranch = chatBranches.branches[chatBranches.currentBranch];
                 
-                // Создаем массив для хранения всех сообщений до точки разветвления
-                let commonMessages = [];
-                let branchPoint = null;
-                
-                // Находим точку разветвления
-                for (let i = 0; i < currentBranch.messages.length; i++) {
-                    const message = currentBranch.messages[i];
-                    const hasBranches = Object.entries(chatBranches.branches).some(([id, branch]) => {
-                        if (id === chatBranches.currentBranch.toString()) return false;
-                        const branchMessage = branch.messages[i];
-                        return branchMessage && branchMessage.id !== message.id;
-                    });
-                    
-                    if (hasBranches && !branchPoint) {
-                        branchPoint = i;
-                    }
-                    
-                    if (i < branchPoint || branchPoint === null) {
-                        commonMessages.push(message);
-                    }
-                }
-                
-                // Отображаем общие сообщения
-                commonMessages.forEach((message) => {
-                    appendMessageToChat(message, false);
-                });
-                
-                // Если есть точка разветвления, показываем индикатор и сообщения текущей ветки
-                if (branchPoint !== null) {
-                    const branchMessage = currentBranch.messages[branchPoint];
-                    const branches = Object.keys(chatBranches.branches)
-                        .filter(id => {
-                            const branch = chatBranches.branches[id];
-                            return branch.messages.length > branchPoint;
-                        })
-                        .sort((a, b) => parseInt(a) - parseInt(b));
-                    
-                    appendMessageToChat(branchMessage, true, branches);
-                    
-                    // Показываем оставшиеся сообщения текущей ветки
-                    currentBranch.messages.slice(branchPoint + 1).forEach(message => {
-                        appendMessageToChat(message, false);
-                    });
-                } else {
-                    // Если нет разветвлений, показываем все сообщения текущей ветки
-                    currentBranch.messages.slice(commonMessages.length).forEach(message => {
-                        appendMessageToChat(message, false);
+                // Рекурсивная функция для отображения сообщений и их веток
+                function renderBranch(branch, path = [], depth = 0) {
+                    branch.messages.forEach((message, index) => {
+                        const hasBranches = branch.branches[message.id] && 
+                                          Object.keys(branch.branches[message.id]).length > 0;
+                        
+                        // Проверяем, находимся ли мы на текущем пути
+                        const isOnCurrentPath = path.length < chatBranches.currentPath.length &&
+                                              path.every((v, i) => v === chatBranches.currentPath[i]);
+                        
+                        // Определяем, активно ли сообщение
+                        const isActive = isOnCurrentPath || path.length >= chatBranches.currentPath.length;
+                        
+                        appendMessageToChat(
+                            message,
+                            hasBranches,
+                            branch.branches[message.id] ? Object.keys(branch.branches[message.id]).sort((a, b) => parseInt(a) - parseInt(b)) : [],
+                            message.id,
+                            depth,
+                            isActive
+                        );
+
+                        // Если это сообщение имеет ветки и мы находимся на текущем пути
+                        if (hasBranches && isOnCurrentPath) {
+                            const nextBranchId = chatBranches.currentPath[path.length];
+                            const nextBranch = branch.branches[message.id][nextBranchId];
+                            if (nextBranch) {
+                                renderBranch(nextBranch, [...path, nextBranchId], depth + 1);
+                            }
+                        }
                     });
                 }
+
+                // Начинаем с корневой ветки
+                renderBranch(chatBranches.branches[chatBranches.currentPath[0]], [chatBranches.currentPath[0]]);
                 
                 chatBox.scrollTop = chatBox.scrollHeight;
             }
             
-            function appendMessageToChat(message, isBranchPoint = false, branches = []) {
+            function appendMessageToChat(message, hasBranches = false, branches = [], messageId, depth = 0, isActive = true) {
                 const messageDiv = document.createElement('div');
-                messageDiv.className = \`message \${message.sender}-message\`;
+                messageDiv.className = \`message \${message.sender}-message\${isActive ? '' : ' inactive'}\`;
+                messageDiv.style.marginLeft = \`\${depth * 20}px\`;
                 
-                if (isBranchPoint && branches.length > 0) {
+                if (hasBranches) {
                     const branchIndicator = document.createElement('div');
                     branchIndicator.className = 'branch-indicator';
-                    branchIndicator.innerHTML = \`Ветка \${chatBranches.currentBranch}\`;
+                    
+                    // Находим текущую ветку для этого сообщения
+                    let currentBranchIndex = -1;
+                    for (let i = 0; i < chatBranches.currentPath.length - 1; i++) {
+                        if (chatBranches.currentPath[i + 1] && 
+                            chatBranches.branches[chatBranches.currentPath[0]].messages[i] && 
+                            chatBranches.branches[chatBranches.currentPath[0]].messages[i].id === messageId) {
+                            currentBranchIndex = i + 1;
+                            break;
+                        }
+                    }
+                    
+                    const currentBranchId = currentBranchIndex !== -1 ? 
+                        chatBranches.currentPath[currentBranchIndex] : 1;
+                    
+                    branchIndicator.innerHTML = \`Ветка \${currentBranchId}\`;
                     
                     const branchNav = document.createElement('div');
                     branchNav.className = 'branch-nav';
+
+                    // Добавляем стрелки навигации
+                    const navArrows = document.createElement('div');
+                    navArrows.className = 'nav-arrows';
+
+                    const prevArrow = document.createElement('button');
+                    prevArrow.className = 'nav-arrow';
+                    prevArrow.innerHTML = '←';
+                    prevArrow.disabled = currentBranchId <= 1;
+                    prevArrow.onclick = () => {
+                        if (currentBranchId > 1) {
+                            switchBranch(messageId, currentBranchId - 1);
+                        }
+                    };
+
+                    const nextArrow = document.createElement('button');
+                    nextArrow.className = 'nav-arrow';
+                    nextArrow.innerHTML = '→';
+                    const maxBranchId = Math.max(...branches.map(b => parseInt(b)));
+                    nextArrow.disabled = currentBranchId >= maxBranchId;
+                    nextArrow.onclick = () => {
+                        if (currentBranchId < maxBranchId) {
+                            switchBranch(messageId, currentBranchId + 1);
+                        }
+                    };
+
+                    navArrows.appendChild(prevArrow);
+                    navArrows.appendChild(nextArrow);
+                    branchNav.appendChild(navArrows);
+
+                    // Добавляем кнопки веток
+                    const branchButtons = document.createElement('div');
+                    branchButtons.className = 'branch-buttons';
                     branches.forEach(branchId => {
                         const branchBtn = document.createElement('button');
                         branchBtn.textContent = branchId;
-                        branchBtn.className = branchId === chatBranches.currentBranch.toString() ? 'active' : '';
-                        branchBtn.onclick = () => switchBranch(parseInt(branchId));
-                        branchNav.appendChild(branchBtn);
+                        branchBtn.className = branchId === currentBranchId?.toString() ? 'active' : '';
+                        branchBtn.onclick = () => switchBranch(messageId, parseInt(branchId));
+                        if (!isActive && branchId !== currentBranchId?.toString()) {
+                            branchBtn.style.display = 'none';
+                        }
+                        branchButtons.appendChild(branchBtn);
                     });
+                    branchNav.appendChild(branchButtons);
                     
                     branchIndicator.appendChild(branchNav);
                     messageDiv.appendChild(branchIndicator);
                 }
                 
-                messageDiv.appendChild(document.createTextNode(message.text));
+                messageDiv.appendChild(document.createTextNode(message.content));
                 
                 if (message.sender === 'user') {
                     const editBtn = document.createElement('button');
@@ -284,7 +420,7 @@ function getWebviewContent() {
 
             messageInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    sendMessage();
+                    handleMessageSubmit();
                 }
             });
 
@@ -294,11 +430,16 @@ function getWebviewContent() {
                     case 'response':
                         const messageObj = {
                             id: generateMessageId(),
-                            text: message.text,
+                            content: message.text,
                             sender: 'bot'
                         };
-                        chatBranches.branches[chatBranches.currentBranch].messages.push(messageObj);
-                        renderChat();
+                        
+                        // Находим текущую ветку для добавления сообщения бота
+                        let currentBranch = getCurrentBranch();
+                        if (currentBranch) {
+                            currentBranch.messages.push(messageObj);
+                            renderChat();
+                        }
                         break;
                 }
             });
