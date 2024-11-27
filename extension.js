@@ -11,20 +11,32 @@ function getWebviewContent() {
             body { 
                 padding: 15px;
                 font-family: sans-serif;
+                margin: 0;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
             }
             #chatBox {
-                height: 300px;
+                flex: 1;
                 border: 1px solid #ccc;
                 margin-bottom: 10px;
                 padding: 10px;
                 overflow-y: auto;
+                min-height: 0;
+            }
+            .input-container {
+                display: flex;
+                gap: 10px;
+                padding: 10px 0;
             }
             #messageInput {
-                width: calc(100% - 130px);
+                flex: 1;
+                min-width: 0;
                 padding: 5px;
             }
             button {
-                padding: 5px;
+                padding: 5px 10px;
+                white-space: nowrap;
             }
             .message {
                 margin: 5px 0;
@@ -33,6 +45,8 @@ function getWebviewContent() {
                 word-wrap: break-word;
                 position: relative;
                 max-width: 100%;
+                overflow-wrap: break-word;
+                hyphens: auto;
             }
             .user-message {
                 background-color: var(--vscode-editor-background);
@@ -84,7 +98,7 @@ function getWebviewContent() {
     </head>
     <body>
         <div id="chatBox"></div>
-        <div style="display: flex; gap: 10px;">
+        <div class="input-container">
             <input type="text" id="messageInput" placeholder="Введите сообщение...">
             <button onclick="sendMessage()">Send</button>
             <button id="newChatBtn" onclick="startNewChat()">New Chat</button>
