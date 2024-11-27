@@ -1,0 +1,44 @@
+{
+  "name": "simple-chat",
+  "displayName": "Simple Chat",
+  "description": "Простой чат, который всегда отвечает '1'",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "simple-chat-sidebar",
+          "title": "Simple Chat",
+          "icon": "media/chat.svg"
+        }
+      ]
+    },
+    "views": {
+      "simple-chat-sidebar": [
+        {
+          "type": "webview",
+          "id": "simple-chat.chatView",
+          "name": "Chat"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^16.18.34",
+    "eslint": "^8.39.0",
+    "typescript": "^5.0.4"
+  }
+}
