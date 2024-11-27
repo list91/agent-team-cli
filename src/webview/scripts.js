@@ -23,16 +23,51 @@ function getScripts() {
 
         function getCurrentBranch() {
             let currentBranch = chatBranches.branches[chatBranches.currentPath[0]];
-            for (let i = 1; i < chatBranches.currentPath.length; i++) {
-                if (!currentBranch || !currentBranch.messages || currentBranch.messages.length < i) {
-                    return currentBranch;
-                }
-                const messageId = currentBranch.messages[i - 1].id;
-                if (!currentBranch.branches[messageId] || !currentBranch.branches[messageId][chatBranches.currentPath[i]]) {
-                    return currentBranch;
-                }
-                currentBranch = currentBranch.branches[messageId][chatBranches.currentPath[i]];
+            if (!currentBranch) {
+                console.error('Initial branch not found');
+                return null;
             }
+
+            let pathIndex = 0;
+            
+            while (pathIndex < chatBranches.currentPath.length - 1) {
+                const messages = currentBranch.messages;
+                let foundBranching = false;
+                
+                // Ищем сообщение с разветвлением
+                for (let i = 0; i < messages.length; i++) {
+                    const messageId = messages[i].id;
+                    if (currentBranch.branches[messageId]) {
+                        const nextBranchId = chatBranches.currentPath[pathIndex + 1];
+                        
+                        console.log('Checking branch:', {
+                            messageId,
+                            nextBranchId,
+                            availableBranches: Object.keys(currentBranch.branches[messageId]),
+                            pathIndex,
+                            currentPath: chatBranches.currentPath
+                        });
+                        
+                        if (currentBranch.branches[messageId][nextBranchId]) {
+                            currentBranch = currentBranch.branches[messageId][nextBranchId];
+                            foundBranching = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!foundBranching) {
+                    console.log('Returning last valid branch:', {
+                        messagesCount: currentBranch.messages.length,
+                        pathIndex,
+                        currentPath: chatBranches.currentPath
+                    });
+                    return currentBranch;
+                }
+                
+                pathIndex++;
+            }
+            
             return currentBranch;
         }
 
@@ -44,74 +79,99 @@ function getScripts() {
         }
 
         function createNewBranch(messageId, content) {
-            const currentBranch = getCurrentBranch();
-            let messageIndex = -1;
-            let branch = currentBranch;
+            let targetBranch = null;
+            let targetMessageIndex = -1;
             
-            // Find the message in the current branch or its parents
-            while (branch && messageIndex === -1) {
-                messageIndex = branch.messages.findIndex(m => m.id === messageId);
-                if (messageIndex === -1) {
-                    branch = branch.parent;
+            // Находим ветку, содержащую сообщение для редактирования
+            let currentBranch = chatBranches.branches[chatBranches.currentPath[0]];
+            let pathIndex = 0;
+            
+            while (currentBranch && targetMessageIndex === -1) {
+                targetMessageIndex = currentBranch.messages.findIndex(m => m.id === messageId);
+                if (targetMessageIndex !== -1) {
+                    targetBranch = currentBranch;
+                } else if (pathIndex + 1 < chatBranches.currentPath.length) {
+                    const nextMessageId = currentBranch.messages[pathIndex].id;
+                    const nextBranchId = chatBranches.currentPath[pathIndex + 1];
+                    currentBranch = currentBranch.branches[nextMessageId][nextBranchId];
+                    pathIndex++;
+                } else {
+                    break;
                 }
             }
             
-            if (messageIndex === -1 || !branch) {
+            if (!targetBranch || targetMessageIndex === -1) {
                 console.error('Message not found for branching');
                 return null;
             }
             
-            if (!branch.branches[messageId]) {
-                branch.branches[messageId] = {
-                    "1": {
-                        messages: branch.messages.slice(messageIndex + 1),
-                        branches: {},
-                        parent: branch
-                    },
-                    "2": {
-                        messages: [{
-                            id: generateMessageId(),
-                            content: content,
-                            sender: 'user'
-                        }],
-                        branches: {},
-                        parent: branch
-                    }
+            if (!targetBranch.branches[messageId]) {
+                // Создаем первую ветку с существующими сообщениями
+                const branch1 = {
+                    messages: targetBranch.messages.slice(targetMessageIndex + 1),
+                    branches: {},
+                    parent: targetBranch
                 };
-                return 2;
-            } else {
-                const maxIndex = getMaxBranchIndex(branch.branches);
-                const newIndex = maxIndex + 1;
                 
-                branch.branches[messageId][newIndex] = {
+                // Создаем вторую ветку с новым сообщением
+                const branch2 = {
                     messages: [{
                         id: generateMessageId(),
                         content: content,
                         sender: 'user'
                     }],
                     branches: {},
-                    parent: branch
+                    parent: targetBranch
                 };
+                
+                targetBranch.branches[messageId] = {
+                    "1": branch1,
+                    "2": branch2
+                };
+                
+                // Обрезаем сообщения в родительской ветке до точки ветвления
+                targetBranch.messages = targetBranch.messages.slice(0, targetMessageIndex + 1);
+                
+                return 2;
+            } else {
+                const maxIndex = getMaxBranchIndex(targetBranch.branches);
+                const newIndex = maxIndex + 1;
+                
+                targetBranch.branches[messageId][newIndex] = {
+                    messages: [{
+                        id: generateMessageId(),
+                        content: content,
+                        sender: 'user'
+                    }],
+                    branches: {},
+                    parent: targetBranch
+                };
+                
                 return newIndex;
             }
         }
 
         function switchBranch(messageId, branchIndex) {
-            const currentBranch = getCurrentBranch();
-            let messageIndex = -1;
-            
-            // Find the message index in the current path
-            let branch = chatBranches.branches[chatBranches.currentPath[0]];
+            let currentBranch = chatBranches.branches[chatBranches.currentPath[0]];
             let pathIndex = 0;
             let found = false;
+            let newPath = [chatBranches.currentPath[0]];
             
-            while (branch && !found) {
-                messageIndex = branch.messages.findIndex(m => m.id === messageId);
-                if (messageIndex !== -1) {
+            // Find the branch containing the message
+            while (currentBranch && !found) {
+                const msgIndex = currentBranch.messages.findIndex(m => m.id === messageId);
+                if (msgIndex !== -1) {
                     found = true;
                 } else if (pathIndex + 1 < chatBranches.currentPath.length) {
-                    const nextMessageId = branch.messages[pathIndex].id;
-                    branch = branch.branches[nextMessageId][chatBranches.currentPath[pathIndex + 1]];
+                    const nextMessageId = currentBranch.messages[pathIndex].id;
+                    const nextBranchId = chatBranches.currentPath[pathIndex + 1];
+                    
+                    if (!currentBranch.branches[nextMessageId] || !currentBranch.branches[nextMessageId][nextBranchId]) {
+                        break;
+                    }
+                    
+                    newPath.push(nextBranchId);
+                    currentBranch = currentBranch.branches[nextMessageId][nextBranchId];
                     pathIndex++;
                 } else {
                     break;
@@ -119,20 +179,18 @@ function getScripts() {
             }
             
             if (found) {
-                // Create new path up to the found message
-                const newPath = chatBranches.currentPath.slice(0, pathIndex + 1);
-                // Add the new branch index
+                // Add the new branch index to the path
                 newPath.push(branchIndex.toString());
                 chatBranches.currentPath = newPath;
-                renderChat();
                 
-                // Log the branch switch for debugging
-                console.log('Switching to branch:', {
+                console.log('Branch switched:', {
                     messageId,
                     branchIndex,
                     newPath,
                     currentPath: chatBranches.currentPath
                 });
+                
+                renderChat();
             }
         }
 
@@ -150,28 +208,48 @@ function getScripts() {
             const content = messageInput.value.trim();
             if (!content) return;
             
+            const activeBranch = getCurrentBranch();
+            if (!activeBranch) {
+                console.error('No active branch found');
+                return;
+            }
+            
             if (editingMessageId) {
-                const currentBranch = getCurrentBranch();
-                const messageIndex = currentBranch.messages.findIndex(m => m.id === editingMessageId);
+                const messageIndex = activeBranch.messages.findIndex(m => m.id === editingMessageId);
                 
                 if (messageIndex !== -1) {
                     const newBranchIndex = createNewBranch(editingMessageId, content);
-                    switchBranch(editingMessageId, newBranchIndex);
-                    
-                    editingMessageId = null;
-                    messageInput.value = '';
-                    
-                    vscode.postMessage({ type: 'message', text: content });
+                    if (newBranchIndex) {
+                        console.log('Creating new branch:', {
+                            messageId: editingMessageId,
+                            newBranchIndex,
+                            content,
+                            currentPath: chatBranches.currentPath
+                        });
+                        
+                        switchBranch(editingMessageId, newBranchIndex);
+                        editingMessageId = null;
+                        messageInput.value = '';
+                        
+                        vscode.postMessage({ type: 'message', text: content });
+                    }
                 }
             } else {
-                const currentBranch = getCurrentBranch();
                 const newMessage = {
-                    id: Date.now().toString(),
+                    id: generateMessageId(),
                     content: content,
                     sender: 'user'
                 };
                 
-                currentBranch.messages.push(newMessage);
+                console.log('Adding message to branch:', {
+                    messageId: newMessage.id,
+                    content,
+                    currentPath: chatBranches.currentPath,
+                    branchMessages: activeBranch.messages.length,
+                    branchDepth: chatBranches.currentPath.length - 1
+                });
+                
+                activeBranch.messages.push(newMessage);
                 messageInput.value = '';
                 
                 renderChat();
@@ -195,6 +273,12 @@ function getScripts() {
         }
 
         function renderChat() {
+            console.log('Current chat state:', {
+                currentPath: chatBranches.currentPath,
+                totalBranches: Object.keys(chatBranches.branches).length,
+                currentBranchMessages: getCurrentBranch().messages.length
+            });
+            
             chatBox.innerHTML = '';
             
             function renderBranch(branch, path = [], depth = 0) {
@@ -206,6 +290,16 @@ function getScripts() {
                                           path.every((v, i) => v === chatBranches.currentPath[i]);
                     
                     const isActive = isOnCurrentPath || path.length >= chatBranches.currentPath.length;
+                    
+                    if (hasBranches) {
+                        console.log('Branch point:', {
+                            messageId: message.id,
+                            content: message.content,
+                            availableBranches: Object.keys(branch.branches[message.id]),
+                            isActive,
+                            depth
+                        });
+                    }
                     
                     appendMessageToChat(
                         message,
@@ -233,25 +327,40 @@ function getScripts() {
         
         function appendMessageToChat(message, hasBranches = false, branches = [], messageId, depth = 0, isActive = true) {
             const messageDiv = document.createElement('div');
-            messageDiv.className = \`message \${message.sender}-message\${isActive ? '' : ' inactive'}\`;
+            messageDiv.className = \`message \${message.sender}-message depth-\${depth} \${isActive ? '' : 'inactive'}\`;
             messageDiv.style.marginLeft = \`\${depth * 20}px\`;
             
             if (hasBranches) {
                 const branchIndicator = document.createElement('div');
                 branchIndicator.className = 'branch-indicator';
                 
+                // Find current branch index
                 let currentBranchIndex = -1;
-                for (let i = 0; i < chatBranches.currentPath.length - 1; i++) {
-                    if (chatBranches.currentPath[i + 1] && 
-                        chatBranches.branches[chatBranches.currentPath[0]].messages[i] && 
-                        chatBranches.branches[chatBranches.currentPath[0]].messages[i].id === messageId) {
-                        currentBranchIndex = i + 1;
+                let branch = chatBranches.branches[chatBranches.currentPath[0]];
+                let pathIndex = 0;
+                
+                while (branch && currentBranchIndex === -1) {
+                    const msgIndex = branch.messages.findIndex(m => m.id === messageId);
+                    if (msgIndex !== -1 && pathIndex + 1 < chatBranches.currentPath.length) {
+                        currentBranchIndex = parseInt(chatBranches.currentPath[pathIndex + 1]);
+                        break;
+                    }
+                    if (pathIndex + 1 < chatBranches.currentPath.length) {
+                        const nextMessageId = branch.messages[pathIndex].id;
+                        branch = branch.branches[nextMessageId][chatBranches.currentPath[pathIndex + 1]];
+                        pathIndex++;
+                    } else {
                         break;
                     }
                 }
                 
-                const currentBranchId = currentBranchIndex !== -1 ? 
-                    chatBranches.currentPath[currentBranchIndex] : 1;
+                const currentBranchId = currentBranchIndex !== -1 ? currentBranchIndex : 1;
+                
+                // Add branch path indicator
+                const pathIndicator = document.createElement('div');
+                pathIndicator.className = 'branch-path-indicator';
+                pathIndicator.textContent = \`Уровень: \${depth} | Ветка: \${currentBranchId}\`;
+                messageDiv.appendChild(pathIndicator);
                 
                 branchIndicator.innerHTML = \`Ветка \${currentBranchId}\`;
                 
@@ -271,6 +380,13 @@ function getScripts() {
                     }
                 };
 
+                // Add keyboard navigation for left arrow
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowLeft' && !prevArrow.disabled && isActive) {
+                        prevArrow.click();
+                    }
+                });
+
                 const nextArrow = document.createElement('button');
                 nextArrow.className = 'nav-arrow';
                 nextArrow.innerHTML = '→';
@@ -282,6 +398,13 @@ function getScripts() {
                     }
                 };
 
+                // Add keyboard navigation for right arrow
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowRight' && !nextArrow.disabled && isActive) {
+                        nextArrow.click();
+                    }
+                });
+
                 navArrows.appendChild(prevArrow);
                 navArrows.appendChild(nextArrow);
                 branchNav.appendChild(navArrows);
@@ -291,9 +414,9 @@ function getScripts() {
                 branches.forEach(branchId => {
                     const branchBtn = document.createElement('button');
                     branchBtn.textContent = branchId;
-                    branchBtn.className = branchId === currentBranchId?.toString() ? 'active' : '';
+                    branchBtn.className = parseInt(branchId) === currentBranchId ? 'active' : '';
                     branchBtn.onclick = () => switchBranch(messageId, parseInt(branchId));
-                    if (!isActive && branchId !== currentBranchId?.toString()) {
+                    if (!isActive && parseInt(branchId) !== currentBranchId) {
                         branchBtn.style.display = 'none';
                     }
                     branchButtons.appendChild(branchBtn);
@@ -333,8 +456,15 @@ function getScripts() {
                         sender: 'bot'
                     };
                     
-                    let currentBranch = getCurrentBranch();
+                    const currentBranch = getCurrentBranch();
                     if (currentBranch) {
+                        console.log('Adding bot response to branch:', {
+                            messageId: messageObj.id,
+                            content: message.text,
+                            currentPath: chatBranches.currentPath,
+                            branchMessages: currentBranch.messages.length
+                        });
+                        
                         currentBranch.messages.push(messageObj);
                         renderChat();
                     }
