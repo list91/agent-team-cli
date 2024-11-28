@@ -254,10 +254,14 @@
 
                 const branchControls = document.createElement('div');
                 branchControls.className = 'branch-controls-inline';
+
+                // Определяем текущий индекс версии
+                const versions = [null, ...Object.keys(getBranchAtPath(branchPoint.path).branches).map(k => parseInt(k))];
+                const currentVersionIndex = versions.indexOf(branchPoint.currentVersion);
                 
                 branchControls.innerHTML = `
                     <button class="prev-branch">←</button>
-                    <span class="branch-indicator-inline">Версия ${branchPoint.currentVersion + 1}/${branchPoint.totalVersions}</span>
+                    <span class="branch-indicator-inline">Версия ${currentVersionIndex + 1}/${versions.length}</span>
                     <button class="next-branch">→</button>
                 `;
 
@@ -436,6 +440,9 @@
                 newVersion
             });
         }
+
+        // Обновляем branchPoint перед изменением пути
+        branchPoint.currentVersion = newVersion;
 
         // Обновляем путь
         const newPath = [...branchPoint.path];
