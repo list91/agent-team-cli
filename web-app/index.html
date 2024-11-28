@@ -3,35 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Branch Editor</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Чат с веткой Git</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/chat.css">
 </head>
 <body>
-    <div id="chat-container">
-        <div id="messages-container"></div>
-        <div id="input-container">
-            <textarea id="message-input" placeholder="Введите сообщение..."></textarea>
-            <button id="send-button">Отправить</button>
-        </div>
-    </div>
-
-    <!-- Модальное окно для редактирования -->
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <textarea id="edit-message-input"></textarea>
-            <div class="modal-buttons">
-                <button class="save-button">Сохранить</button>
-                <button class="cancel-button">Отмена</button>
+    <div class="chat-container">
+        <div class="messages">
+            <div class="message user-message">
+                <div class="message-avatar">H1</div>
+                <div class="message-content">
+                    <div class="message-text">
+                        как залить на новую ветку new_version репозитория https://github.com/LehicPokic/iziq-pc-client
+                        будучи в директории новых исходников
+                    </div>
+                    <div class="message-info">
+                        <span class="copy-btn">📋</span>
+                        <span class="edit-btn">✏️</span>
+                        <span class="page-info">2/2</span>
+                    </div>
+                </div>
+            </div>
+            <div class="message bot-message">
+                <div class="message-avatar">TheB.AI</div>
+                <div class="message-content">
+                    <div class="message-text">
+                        <h2>Чтобы создать новую ветку "new_version" в репозитории Git и залить ваши новые исходники в удаленный репозиторий, следуйте этим шагам:</h2>
+                        
+                        <h3>1. Инициализируйте репозиторий (если еще не инициализирован)</h3>
+                        <p>Вы уже выполнили <code>git init</code>, это правильно. 🚀</p>
+                        
+                        <h3>2. Добавьте исходники в индекс</h3>
+                        <p>Используйте команду <code>git add</code> для добавления ваших файлов в индекс:</p>
+                    </div>
+                    <div class="message-actions">
+                        <button class="copy-btn">📋</button>
+                        <button class="code-btn">💻</button>
+                    </div>
+                </div>
             </div>
         </div>
+        <div class="input-container">
+            <input type="text" placeholder="Спрашивайте все, что угодно...">
+            <button class="submit-btn">↑</button>
+        </div>
     </div>
-
-    <!-- Кнопки для тестов -->
-    <div id="test-controls">
-        <button id="run-test">Запустить тест</button>
-        <button id="show-scheme">Показать схему</button>
-    </div>
-
-    <script src="scripts.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
