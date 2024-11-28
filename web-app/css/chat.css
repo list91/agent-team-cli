@@ -50,22 +50,34 @@
 
 .message-info {
     display: flex;
+    align-items: center;
     gap: 10px;
+    margin-top: 5px;
     color: #888;
     font-size: 0.9em;
 }
 
 .copy-btn, .edit-btn {
     cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.copy-btn:hover, .edit-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1);
 }
 
 .page-info {
     margin-left: auto;
+    color: #666;
+    font-size: 0.8em;
 }
 
 .message-actions {
     display: flex;
     gap: 10px;
+    margin-top: 5px;
     justify-content: flex-end;
 }
 
@@ -73,5 +85,42 @@
     background: none;
     border: none;
     cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
     font-size: 1.2em;
+}
+
+.message-actions button:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+    background: #fff;
+    border-top: 1px solid #eee;
+}
+
+.input-container input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.submit-btn {
+    padding: 10px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.submit-btn:hover {
+    background: #0056b3;
 }

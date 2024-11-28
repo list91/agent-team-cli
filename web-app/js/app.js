@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.querySelector('.input-container input');
     const submitBtn = document.querySelector('.submit-btn');
     const messagesContainer = document.querySelector('.messages');
+    let editingMessage = null;
 
     // Функция для создания нового сообщения
     function createMessage(text, isUser = true) {
@@ -30,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
             copyBtn.className = 'copy-btn';
             copyBtn.textContent = '📋';
             copyBtn.onclick = () => {
-                console.log('Copy button clicked for message:', text.substring(0, 50));
+                console.log('Copy button clicked');
                 navigator.clipboard.writeText(text)
                     .then(() => console.log('Text copied successfully'))
                     .catch(err => console.error('Failed to copy text:', err));
@@ -40,38 +41,36 @@ document.addEventListener('DOMContentLoaded', () => {
             editBtn.className = 'edit-btn';
             editBtn.textContent = '✏️';
             editBtn.onclick = () => {
-                console.log('Edit button clicked for message:', text.substring(0, 50));
+                const messageTextDiv = messageDiv.querySelector('.message-text');
+                const currentText = messageTextDiv.textContent.trim();
+                console.log('Edit button clicked. Current text:', currentText);
+                
+                editingMessage = messageTextDiv;
+                input.value = currentText;
+                input.focus();
+                submitBtn.textContent = 'Сохранить';
             };
-
-            const pageInfo = document.createElement('span');
-            pageInfo.className = 'page-info';
-            pageInfo.textContent = '1/1';
 
             messageInfo.appendChild(copyBtn);
             messageInfo.appendChild(editBtn);
-            messageInfo.appendChild(pageInfo);
         } else {
-            console.log('Adding bot message controls');
-            const actions = document.createElement('div');
-            actions.className = 'message-actions';
-            
             const copyBtn = document.createElement('button');
             copyBtn.className = 'copy-btn';
             copyBtn.textContent = '📋';
             copyBtn.onclick = () => {
                 console.log('Copy button clicked for bot message');
+                const messageText = messageDiv.querySelector('.message-text').textContent;
+                navigator.clipboard.writeText(messageText)
+                    .then(() => console.log('Bot message copied successfully'))
+                    .catch(err => console.error('Failed to copy bot message:', err));
             };
 
             const codeBtn = document.createElement('button');
             codeBtn.className = 'code-btn';
             codeBtn.textContent = '💻';
-            codeBtn.onclick = () => {
-                console.log('Code button clicked for bot message');
-            };
-
-            actions.appendChild(copyBtn);
-            actions.appendChild(codeBtn);
-            messageInfo.appendChild(actions);
+            
+            messageInfo.appendChild(copyBtn);
+            messageInfo.appendChild(codeBtn);
         }
 
         content.appendChild(messageText);
@@ -79,24 +78,33 @@ document.addEventListener('DOMContentLoaded', () => {
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(content);
         messagesContainer.appendChild(messageDiv);
-        console.log('Message added to container');
         
         // Прокрутка к новому сообщению
         messageDiv.scrollIntoView({ behavior: 'smooth' });
+        return messageDiv;
     }
 
     function handleSubmit() {
         const text = input.value.trim();
+        console.log('Handling submit with text:', text);
+        
         if (text) {
-            console.log('Handling message submission:', text.substring(0, 50));
-            createMessage(text, true);
+            if (editingMessage) {
+                console.log('Saving edited message:', text);
+                editingMessage.textContent = text;
+                submitBtn.textContent = '↑';
+                editingMessage = null;
+            } else {
+                console.log('Creating new message:', text);
+                createMessage(text, true);
+                
+                // Имитация ответа бота
+                setTimeout(() => {
+                    console.log('Generating bot response');
+                    createMessage('Это ответ на ваше сообщение от бота', false);
+                }, 1000);
+            }
             input.value = '';
-            
-            // Имитация ответа бота
-            setTimeout(() => {
-                console.log('Generating bot response');
-                createMessage('Это ответ на ваше сообщение от бота', false);
-            }, 1000);
         } else {
             console.warn('Attempted to submit empty message');
         }
@@ -110,8 +118,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     input.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-            console.log('Enter key pressed in input');
+            console.log('Enter key pressed');
             handleSubmit();
+        }
+    });
+
+    // Отмена редактирования при нажатии Escape
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && editingMessage) {
+            console.log('Canceling edit mode');
+            editingMessage = null;
+            input.value = '';
+            submitBtn.textContent = '↑';
         }
     });
 
