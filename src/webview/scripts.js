@@ -229,23 +229,28 @@
             currentBranch = branch;
         }
 
-        // Отображаем сообщения
-        messageChain.forEach((message, index) => {
-            // Проверяем, является ли это сообщение точкой ветвления
-            const branchPoint = branchPoints.find(bp => {
-                const branchMessages = getBranchAtPath(bp.path).messages;
-                const branchMessageIndex = branchMessages.findIndex(m => m.id === message.id);
-                return branchMessageIndex === bp.messageIndex;
-            });
+        // Создаем карту точек ветвления для быстрого доступа
+        const branchPointsMap = new Map();
+        branchPoints.forEach(bp => {
+            const messages = getBranchAtPath(bp.path).messages;
+            const messageId = messages[bp.messageIndex].id;
+            branchPointsMap.set(messageId, bp);
+        });
 
+        // Отображаем сообщения
+        let lastBranchPoint = null;
+        let lastBranchContainer = null;
+
+        messageChain.forEach((message, index) => {
+            const branchPoint = branchPointsMap.get(message.id);
+            
             if (branchPoint) {
-                if (state.debug) {
-                    console.log('Found branch point for message:', {
-                        messageId: message.id,
-                        index,
-                        branchPoint
-                    });
-                }
+                lastBranchPoint = branchPoint;
+                
+                // Создаем новый контейнер для ветки
+                const branchMessageContainer = document.createElement('div');
+                branchMessageContainer.className = 'branch-message-container';
+                lastBranchContainer = branchMessageContainer;
 
                 const branchControls = document.createElement('div');
                 branchControls.className = 'branch-controls-inline';
@@ -256,7 +261,13 @@
                     <button class="next-branch">→</button>
                 `;
 
-                container.appendChild(branchControls);
+                branchMessageContainer.appendChild(branchControls);
+                
+                // Добавляем текущее сообщение в контейнер ветки
+                const messageElement = createMessageElement(message);
+                branchMessageContainer.appendChild(messageElement);
+                
+                container.appendChild(branchMessageContainer);
 
                 const prevButton = branchControls.querySelector('.prev-branch');
                 const nextButton = branchControls.querySelector('.next-branch');
@@ -268,32 +279,55 @@
                 nextButton.addEventListener('click', () => {
                     navigateBranchAtPoint(branchPoint, 'next');
                 });
+            } else if (lastBranchPoint && lastBranchContainer && isBranchChild(message, lastBranchPoint)) {
+                // Если это сообщение является частью текущей ветки, добавляем его в тот же контейнер
+                const messageElement = createMessageElement(message);
+                lastBranchContainer.appendChild(messageElement);
+            } else {
+                // Сбрасываем отслеживание ветки
+                lastBranchPoint = null;
+                lastBranchContainer = null;
+                
+                // Обычное сообщение
+                const messageElement = createMessageElement(message);
+                container.appendChild(messageElement);
             }
-
-            const messageElement = document.createElement('div');
-            messageElement.className = `message depth-${message.depth % 5}`;
-            
-            const content = message.isEdited 
-                ? `<div class="message-content">${message.content} <span class="edited-mark">(изменено)</span></div>`
-                : `<div class="message-content">${message.content}</div>`;
-
-            messageElement.innerHTML = `
-                ${content}
-                <button class="edit-button" title="Редактировать сообщение">✎</button>
-            `;
-
-            const editButton = messageElement.querySelector('.edit-button');
-            editButton.addEventListener('click', () => {
-                state.currentEditingMessageId = message.id;
-                state.editMessageInput.value = message.content;
-                state.editModal.style.display = 'block';
-                state.editMessageInput.focus();
-            });
-
-            container.appendChild(messageElement);
         });
 
         container.scrollTop = container.scrollHeight;
+    }
+
+    // Проверяет, является ли сообщение частью ветки
+    function isBranchChild(message, branchPoint) {
+        const branch = getBranchAtPath([...branchPoint.path, branchPoint.currentVersion]);
+        if (!branch) return false;
+        
+        return branch.messages.some(m => m.id === message.id);
+    }
+
+    // Вспомогательная функция для создания элемента сообщения
+    function createMessageElement(message) {
+        const messageElement = document.createElement('div');
+        messageElement.className = `message depth-${message.depth % 5}`;
+        
+        const content = message.isEdited 
+            ? `<div class="message-content">${message.content} <span class="edited-mark">(изменено)</span></div>`
+            : `<div class="message-content">${message.content}</div>`;
+
+        messageElement.innerHTML = `
+            ${content}
+            <button class="edit-button" title="Редактировать сообщение">✎</button>
+        `;
+
+        const editButton = messageElement.querySelector('.edit-button');
+        editButton.addEventListener('click', () => {
+            state.currentEditingMessageId = message.id;
+            state.editMessageInput.value = message.content;
+            state.editModal.style.display = 'block';
+            state.editMessageInput.focus();
+        });
+
+        return messageElement;
     }
 
     function findBranchPoints() {

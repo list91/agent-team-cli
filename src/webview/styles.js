@@ -92,21 +92,16 @@ function getStyles() {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin: 0 0 -5px;
+            margin: 0;
             padding: 8px 12px;
             background: rgba(0, 0, 0, 0.05);
             border-radius: 6px 6px 0 0;
             font-size: 0.9em;
-            max-width: fit-content;
+            width: fit-content;
             border: 1px solid rgba(0, 0, 0, 0.1);
             border-bottom: none;
             position: relative;
             z-index: 1;
-        }
-
-        .branch-controls-inline + .message {
-            margin-top: 0;
-            border-top-left-radius: 0;
         }
 
         .branch-controls-inline button {
@@ -129,6 +124,31 @@ function getStyles() {
             font-size: 0.9em;
             color: #666;
             padding: 0 5px;
+        }
+
+        .branch-message-container {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            width: fit-content;
+        }
+
+        .branch-message-container .message {
+            margin: 0;
+            border-top-left-radius: 0;
+            margin-left: 0 !important;
+            max-width: none;
+            width: fit-content;
+        }
+
+        .branch-message-container .message + .message {
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+
+        .branch-controls-inline + .message {
+            margin-top: 0;
+            border-top-left-radius: 0;
         }
 
         #input-container {
