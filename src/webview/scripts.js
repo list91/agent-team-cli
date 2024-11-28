@@ -185,11 +185,39 @@
 
     function renderMessages() {
         const container = document.getElementById('messages-container');
-        if (!container) return;
-
         container.innerHTML = '';
+        
+        let currentBranchContainer = null;
+        let lastDepth = 0;
+        
+        const messages = getMessages();
+        messages.forEach((message, index) => {
+            const messageElement = createMessageElement(message);
+            
+            // Определяем глубину сообщения
+            const depth = message.depth || 0;
+            messageElement.classList.add(`depth-${depth}`);
+            
+            // Если глубина изменилась с 0 на 1 - создаем новый контейнер ветки
+            if (depth === 1 && lastDepth === 0) {
+                currentBranchContainer = document.createElement('div');
+                currentBranchContainer.className = 'branch-messages';
+                container.appendChild(currentBranchContainer);
+            }
+            
+            // Если сообщение в ветке - добавляем его в контейнер ветки
+            if (depth === 1) {
+                currentBranchContainer.appendChild(messageElement);
+            } else {
+                container.appendChild(messageElement);
+                currentBranchContainer = null;
+            }
+            
+            lastDepth = depth;
+        });
+    }
 
-        // Собираем информацию о ветвлениях
+    function getMessages() {
         const branchPoints = findBranchPoints();
 
         if (state.debug) {
@@ -229,76 +257,7 @@
             currentBranch = branch;
         }
 
-        // Создаем карту точек ветвления для быстрого доступа
-        const branchPointsMap = new Map();
-        branchPoints.forEach(bp => {
-            const messages = getBranchAtPath(bp.path).messages;
-            const messageId = messages[bp.messageIndex].id;
-            branchPointsMap.set(messageId, bp);
-        });
-
-        // Отображаем сообщения
-        let lastBranchPoint = null;
-        let lastBranchContainer = null;
-
-        messageChain.forEach((message, index) => {
-            const branchPoint = branchPointsMap.get(message.id);
-            
-            if (branchPoint) {
-                lastBranchPoint = branchPoint;
-                
-                // Создаем новый контейнер для ветки
-                const branchMessageContainer = document.createElement('div');
-                branchMessageContainer.className = 'branch-message-container';
-                lastBranchContainer = branchMessageContainer;
-
-                const branchControls = document.createElement('div');
-                branchControls.className = 'branch-controls-inline';
-
-                // Определяем текущий индекс версии
-                const versions = [null, ...Object.keys(getBranchAtPath(branchPoint.path).branches).map(k => parseInt(k))];
-                const currentVersionIndex = versions.indexOf(branchPoint.currentVersion);
-                
-                branchControls.innerHTML = `
-                    <button class="prev-branch">←</button>
-                    <span class="branch-indicator-inline">Версия ${currentVersionIndex + 1}/${versions.length}</span>
-                    <button class="next-branch">→</button>
-                `;
-
-                branchMessageContainer.appendChild(branchControls);
-                
-                // Добавляем текущее сообщение в контейнер ветки
-                const messageElement = createMessageElement(message);
-                branchMessageContainer.appendChild(messageElement);
-                
-                container.appendChild(branchMessageContainer);
-
-                const prevButton = branchControls.querySelector('.prev-branch');
-                const nextButton = branchControls.querySelector('.next-branch');
-
-                prevButton.addEventListener('click', () => {
-                    navigateBranchAtPoint(branchPoint, 'prev');
-                });
-
-                nextButton.addEventListener('click', () => {
-                    navigateBranchAtPoint(branchPoint, 'next');
-                });
-            } else if (lastBranchPoint && lastBranchContainer && isBranchChild(message, lastBranchPoint)) {
-                // Если это сообщение является частью текущей ветки, добавляем его в тот же контейнер
-                const messageElement = createMessageElement(message);
-                lastBranchContainer.appendChild(messageElement);
-            } else {
-                // Сбрасываем отслеживание ветки
-                lastBranchPoint = null;
-                lastBranchContainer = null;
-                
-                // Обычное сообщение
-                const messageElement = createMessageElement(message);
-                container.appendChild(messageElement);
-            }
-        });
-
-        container.scrollTop = container.scrollHeight;
+        return messageChain;
     }
 
     // Проверяет, является ли сообщение частью ветки
@@ -312,7 +271,7 @@
     // Вспомогательная функция для создания элемента сообщения
     function createMessageElement(message) {
         const messageElement = document.createElement('div');
-        messageElement.className = `message depth-${message.depth % 5}`;
+        messageElement.className = `message`;
         
         const content = message.isEdited 
             ? `<div class="message-content">${message.content} <span class="edited-mark">(изменено)</span></div>`

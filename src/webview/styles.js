@@ -151,6 +151,38 @@ function getStyles() {
             border-top-left-radius: 0;
         }
 
+        .branch-messages {
+            margin-left: 20px;
+            padding-left: 10px;
+            border-left: 2px solid #4CAF50;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .depth-1 {
+            background-color: rgba(76, 175, 80, 0.1);
+            border-radius: 8px;
+        }
+
+        .message {
+            position: relative;
+            margin: 8px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message-content {
+            margin-right: 30px;
+        }
+
+        .edited-mark {
+            font-size: 0.8em;
+            color: #666;
+            font-style: italic;
+        }
+
         #input-container {
             position: fixed;
             bottom: 0;

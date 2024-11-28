@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Branch Editor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="chat-container">
+        <div id="messages-container"></div>
+        <div id="input-container">
+            <textarea id="message-input" placeholder="Введите сообщение..."></textarea>
+            <button id="send-button">Отправить</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно для редактирования -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <textarea id="edit-message-input"></textarea>
+            <div class="modal-buttons">
+                <button class="save-button">Сохранить</button>
+                <button class="cancel-button">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кнопки для тестов -->
+    <div id="test-controls">
+        <button id="run-test">Запустить тест</button>
+        <button id="show-scheme">Показать схему</button>
+    </div>
+
+    <script src="scripts.js"></script>
+</body>
+</html>
