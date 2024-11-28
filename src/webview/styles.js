@@ -1,148 +1,247 @@
 function getStyles() {
     return `
-        body { 
-            padding: 15px;
-            font-family: sans-serif;
+        body {
+            padding: 0;
             margin: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
-        #chatBox {
-            flex: 1;
-            border: 1px solid #ccc;
-            margin-bottom: 10px;
-            padding: 10px;
+
+        #messages-container {
+            padding: 20px;
+            height: calc(100vh - 100px);
             overflow-y: auto;
-            min-height: 0;
+            background: #f5f5f5;
         }
-        .input-container {
-            display: flex;
-            gap: 10px;
-            padding: 10px 0;
-        }
-        #messageInput {
-            flex: 1;
-            min-width: 0;
-            padding: 5px;
-        }
-        button {
-            padding: 5px 10px;
-            white-space: nowrap;
-        }
+
         .message {
-            margin: 5px 0;
-            padding: 5px;
-            border-radius: 5px;
-            word-wrap: break-word;
             position: relative;
-            max-width: calc(100% - var(--indent-size, 20px));
-            overflow-wrap: break-word;
-            hyphens: auto;
-            transition: all 0.3s ease;
-            border-left: 3px solid transparent;
+            margin: 10px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+            transition: all 0.2s ease;
         }
-        .message.depth-0 { border-left-color: #4a9eff; }
-        .message.depth-1 { border-left-color: #ff4a4a; }
-        .message.depth-2 { border-left-color: #4aff4a; }
-        .message.depth-3 { border-left-color: #ff4aff; }
-        .message.depth-4 { border-left-color: #ffff4a; }
-        .message.inactive {
-            opacity: 0.5;
+
+        .message-content {
+            margin-right: 30px;
+            line-height: 1.4;
         }
-        .user-message {
-            background-color: var(--vscode-editor-background);
-            color: var(--vscode-editor-foreground);
+
+        .edited-mark {
+            font-size: 0.8em;
+            opacity: 0.7;
+            font-style: italic;
+            margin-left: 5px;
         }
-        .bot-message {
-            background-color: var(--vscode-editor-selectionBackground);
-            color: var(--vscode-editor-foreground);
-        }
-        .edit-btn {
-            display: none;
+
+        .edit-button {
             position: absolute;
-            right: 5px;
-            top: 5px;
-            background: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
             border: none;
-            border-radius: 3px;
             cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            padding: 5px;
+            font-size: 16px;
+            color: inherit;
         }
-        .message:hover .edit-btn {
-            display: block;
-        }
-        .branch-indicator {
-            font-size: 12px;
-            color: var(--vscode-descriptionForeground);
-            margin-bottom: 2px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            opacity: 0.8;
-        }
-        .branch-path-indicator {
-            font-size: 10px;
-            color: var(--vscode-descriptionForeground);
-            margin-bottom: 4px;
+
+        .message:hover .edit-button {
             opacity: 0.7;
         }
-        .branch-nav {
-            display: inline-flex;
-            gap: 2px;
-            align-items: center;
+
+        .edit-button:hover {
+            opacity: 1 !important;
         }
-        .branch-nav button {
-            padding: 2px 5px;
-            min-width: 24px;
-            cursor: pointer;
-            opacity: 0.6;
-            transition: opacity 0.3s ease;
+
+        .depth-0 {
+            background: #4a9eff;
+            color: white;
+            margin-left: 0;
         }
-        .branch-nav button.active {
-            background: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
-            opacity: 1;
+
+        .depth-1 {
+            background: #2ecc71;
+            color: white;
+            margin-left: 20px;
         }
-        .branch-nav button:hover {
-            opacity: 1;
+
+        .depth-2 {
+            background: #e74c3c;
+            color: white;
+            margin-left: 40px;
         }
-        .branch-nav .nav-arrows {
+
+        .depth-3 {
+            background: #f1c40f;
+            color: white;
+            margin-left: 60px;
+        }
+
+        .depth-4 {
+            background: #9b59b6;
+            color: white;
+            margin-left: 80px;
+        }
+
+        .branch-controls-inline {
             display: flex;
-            gap: 2px;
-            margin-right: 4px;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 -5px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 6px 6px 0 0;
+            font-size: 0.9em;
+            max-width: fit-content;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-bottom: none;
+            position: relative;
+            z-index: 1;
         }
-        .branch-nav .nav-arrow {
-            padding: 2px 4px;
+
+        .branch-controls-inline + .message {
+            margin-top: 0;
+            border-top-left-radius: 0;
+        }
+
+        .branch-controls-inline button {
+            padding: 4px 12px;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            color: #333;
             cursor: pointer;
-            opacity: 0.6;
-            transition: opacity 0.3s ease;
-            background: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .branch-controls-inline button:hover {
+            background: #f0f0f0;
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .branch-indicator-inline {
+            font-size: 0.9em;
+            color: #666;
+            padding: 0 5px;
+        }
+
+        #input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 10px;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: none;
+            min-height: 20px;
+            max-height: 150px;
+            font-family: inherit;
+        }
+
+        #send-button {
+            padding: 10px 20px;
+            background: #4a9eff;
+            color: white;
             border: none;
-            border-radius: 3px;
-            font-size: 10px;
-            min-width: 20px;
-            height: 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        #send-button:hover {
+            background: #357abd;
+        }
+
+        #edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        #edit-message-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .modal-buttons {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
         }
-        .branch-nav .nav-arrow:hover:not(:disabled) {
-            opacity: 1;
-            transform: scale(1.1);
+
+        .modal-buttons button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
         }
-        .branch-nav .nav-arrow:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            background: var(--vscode-button-secondaryBackground);
+
+        .cancel-button {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            color: #666;
         }
-        #newChatBtn {
-            margin-left: 10px;
+
+        .save-button {
+            background: #4a9eff;
+            border: 1px solid #357abd;
+            color: white;
+        }
+
+        .cancel-button:hover {
+            background: #e8e8e8;
+        }
+
+        .save-button:hover {
+            background: #357abd;
         }
     `;
 }
 
-module.exports = {
-    getStyles
-};
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { getStyles };
+}
