@@ -54,7 +54,6 @@
     gap: 10px;
     margin-top: 5px;
     color: #888;
-    font-size: 0.9em;
 }
 
 .copy-btn, .edit-btn {
@@ -62,15 +61,17 @@
     padding: 2px 5px;
     border-radius: 4px;
     transition: background-color 0.2s;
+    color: #aaa;
 }
 
 .copy-btn:hover, .edit-btn:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
 }
 
 .page-info {
     margin-left: auto;
-    color: #666;
+    color: #888;
     font-size: 0.8em;
 }
 
@@ -89,10 +90,12 @@
     border-radius: 4px;
     transition: background-color 0.2s;
     font-size: 1.2em;
+    color: #aaa;
 }
 
 .message-actions button:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
 }
 
 .input-container {
