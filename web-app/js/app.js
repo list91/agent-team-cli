@@ -163,7 +163,7 @@ function edit_message_in_chat(params) {
 edit_message_in_chat({
     chat: new_chat,
     newcontent: "Теперь я чувствую себя просто отлично!",
-    message_id: 14 // Замените это ID сообщения, которое необходимо отредактировать
+    message_id: 15 // Замените это ID сообщения, которое необходимо отредактировать
 });
 
 

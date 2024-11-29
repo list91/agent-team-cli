@@ -3,25 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Чат</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/chat.css">
+    <title>Динамический блок</title>
+    <style>
+        .text-block {
+            position: relative;
+            padding: 20px;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+            margin: 10px;
+            border-radius: 5px;
+        }
+
+        .indicator {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background-color: red;
+            border-radius: 50%;
+            display: none; /* По умолчанию скрываем индикатор */
+        }
+
+        .text-block[state_diffusion="true"] .indicator {
+            display: block; /* Показываем индикатор, если атрибут "state_diffusion=true" */
+        }
+    </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-messages" id="chat-messages">
-            <!-- Сообщения будут добавляться здесь динамически -->
-        </div>
-        <div class="branch-controls">
-            <span class="branch-indicator">1/2</span>
-            <button class="branch-nav prev">←</button>
-            <button class="branch-nav next">→</button>
-        </div>
-        <div class="chat-input-container">
-            <input type="text" id="message-input" placeholder="Введите сообщение">
-            <button id="send-button">Отправить</button>
-        </div>
+
+    <div class="text-block" state_diffusion="true">
+        <div class="indicator"><button><</button><div class="branch-controls">0/0</div><button>></button></div>
+        Это текст с атрибутом state_diffusion=true. Здесь будет красный индикатор.
     </div>
+
+    <div class="text-block" state_diffusion="false">
+        <div class="indicator"><button><</button><div class="branch-controls">0/0</div><button>></button></div>
+        Это текст без атрибута state_diffusion=true. Индикатор не будет виден.
+    </div>
+
+    <div class="text-block" state_diffusion="true">
+        <div class="indicator"><button><</button><div class="branch-controls">0/0</div><button>></button></div>
+        Это еще один текст с атрибутом state_diffusion=true.
+    </div>
+
     <script src="js/app.js"></script>
 </body>
 </html>
