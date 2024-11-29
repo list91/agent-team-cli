@@ -2,53 +2,45 @@
     "chat_id": 82175378125486151,
     "history": [
         {
+            "id": 12,
             "index": 1,
             "content": "Привет, чем могу помочь?",
             "role": "assistant"
         },
         {
+            "id": 13,
             "index": 1,
             "content": "Привет, как дела?",
             "role": "user",
             "diffusion": [
                 {
-                    "diffusion_index": 1,
-                    "history": [
-                        {
-                            "index": 1,
-                            "content": "Привет, как работа?",
-                            "role": "user"
-                        },
-                        {
-                            "index": 1,
-                            "content": "Привет, чем могу помочь?",
-                            "role": "assistant"
-                        }
-                    ]
-                },
-                {
                     "diffusion_index": 2,
                     "history": [
                         {
+                            "id": 24,
                             "index": 2,
-                            "content": "Привет, чем могу помочь?",
-                            "role": "assistant"
+                            "content": "Привет, как работа?",
+                            "role": "user",
+                            "diffusion": []
                         },
                         {
+                            "id": 25,
                             "index": 2,
-                            "content": "Привет, как дела?",
-                            "role": "user"
+                            "content": "Круто",
+                            "role": "assistant"
                         }
                     ]
                 }
             ]
         },
         {
+            "id": 14,
             "index": 1,
             "content": "Хорошо, спасибо!",
             "role": "assistant"
         },
         {
+            "id": 15,
             "index": 1,
             "content": "Как настроение?",
             "role": "user",

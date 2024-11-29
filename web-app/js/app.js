@@ -1,53 +1,72 @@
 let new_chat = {
-    "chat_id": 82175378125486151,
+    "chat_id": 82175378125486140,
     "history": [
-        {
-            "id": 12,
-            "index": 1,
-            "content": "Привет, чем могу помочь?",
-            "role": "assistant"
-        },
-        {
-            "id": 13,
-            "index": 1,
-            "content": "Привет, как дела?",
-            "role": "user",
-            "diffusion": [
-                {
-                    "diffusion_index": 2,
-                    "history": [
-                        {
-                            "id": 24,
-                            "index": 2,
-                            "content": "Привет, как работа?",
-                            "role": "user",
-                            "diffusion": []
-                        },
-                        {
-                            "id": 25,
-                            "index": 2,
-                            "content": "Круто",
-                            "role": "assistant"
-                        }
-                    ]
-                }
+      {
+        "id": 12,
+        "index": 1,
+        "content": "Привет, чем могу помочь?",
+        "role": "assistant"
+      },
+      {
+        "id": 13,
+        "index": 1,
+        "content": "Привет, как дела?",
+        "role": "user",
+        "diffusion": [
+          {
+            "diffusion_index": 2,
+            "history": [
+              {
+                "id": 24,
+                "index": 2,
+                "content": "Привет, как работа?",
+                "role": "user",
+                "diffusion": []
+              },
+              {
+                "id": 25,
+                "index": 2,
+                "content": "Круто",
+                "role": "assistant"
+              }
             ]
-        },
-        {
-            "id": 14,
-            "index": 1,
-            "content": "Хорошо, спасибо!",
-            "role": "assistant"
-        },
-        {
-            "id": 15,
-            "index": 1,
-            "content": "Как настроение?",
-            "role": "user",
-            "diffusion": []
-        }
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "index": 1,
+        "content": "Хорошо, спасибо!",
+        "role": "assistant"
+      },
+      {
+        "id": 15,
+        "index": 1,
+        "content": "Как настроение?",
+        "role": "user",
+        "diffusion": [
+          {
+            "diffusion_index": 1732865828158,
+            "history": [
+              {
+                "id": 1732865717047,
+                "index": 1732865828158,
+                "content": "Теперь я чувствую себя просто отлично!",
+                "role": "user",
+                "diffusion": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "content": "У меня всё в порядке!",
+        "role": "user",
+        "diffusion": []
+      }
     ]
-};
+  };
 
 function add_message_in_chat(params) {
     let chat = params.chat;
@@ -202,27 +221,91 @@ function create_message_block(params) {
     // Добавляем новый элемент в body
     document.body.appendChild(newDiv);
 }
+function findPathToIndex(chat, targetIndex) {
+    let path = [];
 
-function render_chat(chat) {
-    // Создаем контейнер для чата
+    function searchHistory(history) {
+        for (let entry of history) {
+            if (entry.index === targetIndex) {
+                // Если индекс найден, добавляем информацию в путь
+                path.push({ index: entry.index });
+                return true; // Остановить дальнейшие поиски
+            }
+
+            // Добавляем текущее сообщение в путь
+            path.push({ index: entry.index });
+
+            // Проверяем наличие диффузий
+            if (entry.diffusion) {
+                for (let diffusion of entry.diffusion) {
+                    // Если ищем в диффузии, рекурсивно вызываем функцию
+                    if (searchHistory(diffusion.history)) {
+                        return true; // Возвращаем, если нашли в под-истории
+                    }
+                }
+            }
+
+            // Если не нашли в диффузии, убираем последний элемент из пути
+            path.pop();
+        }
+        return false; // Если индекс не найден
+    }
+
+    searchHistory(chat.history);
+    return path.length > 0 ? path : null; // Возвращаем путь или null, если не найдено
+}
+
+
+
+
+function render_chat(chat, current_index) {
+    // Находим путь к текущему индексу
+    const current_path = findPathToIndex(chat, current_index) || findPathToIndex(chat, 1);
     const chatContainer = document.createElement('div');
     chatContainer.className = 'chat-container';
 
-    // Обрабатываем историю сообщений
-    chat.history.forEach(entry => {
-        
-        // Устанавливаем стиль в зависимости от роли
-        if (entry.role === 'user') {
+    // Если путь найден, рендерим по нему
+    if (current_path) {
+        // Итерируемся по пути, чтобы отобразить только соответствующие сообщения
+        current_path.forEach((step, index) => {
+
+            // перебираю  историю с начала и собираю массив с идентификаторами сообщений у которых индекс равен текущему в итерации 
+            
+
+            // const entry = chat.history.find(e => e.index === step.index);
+            // if (entry) {
+            //     // Устанавливаем стиль в зависимости от роли
+            //     let diffusion;
+            //     if (entry.diffusion && entry.diffusion.length > 0) {
+            //         diffusion = true;
+            //     }
+            //     create_message_block({ state_diffusion: diffusion, content: entry.content });
+                
+            //     // Если у сообщения есть диффузия, можно отрисовать её историю
+            //     if (entry.diffusion && entry.diffusion.length > 0) {
+            //         entry.diffusion.forEach(diff => {
+            //             diff.history.forEach(diffEntry => {
+            //                 create_message_block({ state_diffusion: false, content: diffEntry.content });
+            //             });
+            //         });
+            //     }
+            // }
+        });
+    } else {
+        // Если путь не найден, выводим по умолчанию из главной истории
+        chat.history.forEach(entry => {
+            // Устанавливаем стиль в зависимости от роли
             let diffusion;
             if (entry.diffusion && entry.diffusion.length > 0) {
                 diffusion = true;
             }
-            create_message_block({state_diffusion: diffusion, content: entry.content});
-        } else {
-            create_message_block({state_diffusion: false, content: entry.content});
-        }
-    });
+            create_message_block({ state_diffusion: diffusion, content: entry.content });
+        });
+    }
 }
+
+// Рендерим чат
+
 
 // Пример стилей для сообщений
 const styles = `
@@ -267,4 +350,8 @@ const styles = `
 document.head.insertAdjacentHTML('beforeend', styles);
 
 // Рендерим чат
-render_chat(new_chat);
+// render_chat(new_chat);
+// render_chat(new_chat, 1732865828158); // Указываем индекс, по которому нужно отобразить чат
+
+// const path = findPathToIndex(new_chat, 1732865828158); // Указываем индекс, путь к которому нужно найти
+// console.log(path);
