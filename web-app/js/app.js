@@ -355,3 +355,62 @@ document.head.insertAdjacentHTML('beforeend', styles);
 
 // const path = findPathToIndex(new_chat, 1732865828158); // Указываем индекс, путь к которому нужно найти
 // console.log(path);
+// план
+
+// если от 1 до 2 то получается [12, 24, 25]
+// а если от 1 до 1732865828158 [12, 13, 14, 1732865828158]
+
+// функция которая принимает массив историй, массив сообщений, индекс. возвращает путь к индексу в виде массива
+
+// перебираю историю и собираю массив с идентификаторами сообщений у которых индекс равен текущему входному индексу
+// но при этом нельзя класть сообщение с тем же индексом если у него есть диффузия среди которых есть со схожим индексом, если это так то рекурсивно снова вызываем историю внутри этой диффузии
+
+// перебираю историю и мне надо класть все что имеет индекс как и входной, но при этом мне нельзя добавлять сообщение с тем же индексом но с диффузией в которой любая из существующих диффузий имеет следующий индекс пути
+
+// добавляем если индекс соответствует И если среди его диффизий нет следующих диффизий по списку пути
+
+// @@ проходимся по сообщениям и спускаемсяя в диффизии пропуская дальшеидущие сообщения по текущему индексу
+
+function findPathToIndex(chat, indexes) {
+    let path = [];
+
+    function searchHistory(history, index) {
+        console.log(index);
+        for (let entry of history) {
+            if(entry.id === 25){
+                console.log(entry, "+++++++++++++++++++++++++++++++++++++++++++");
+            }
+            if (entry.index === index) {
+                if (!entry.diffusion) {
+                    path.push({ index: entry.id });
+                }
+                // если индекс не последний
+                console.log(indexes.indexOf(index), indexes.length, indexes.indexOf(index) < indexes.length - 1);
+                if (indexes.indexOf(index) < indexes.length - 1) {
+
+                    if (entry.diffusion && entry.diffusion.length > 0) {
+                        let isDiffusion = false;
+                        for (let diffusion of entry.diffusion) {
+                            // если индекс равен индексу после значения index из массива indexes
+                            if (diffusion.diffusion_index === indexes[indexes.indexOf(index) + 1]) {
+                                searchHistory(diffusion.history, indexes[indexes.indexOf(index) + 1]);
+                                isDiffusion = true;
+                            }
+                        }
+                        path.push({ index: entry.id });
+                    }
+                } else {
+                    path.push({ index: entry.id });
+                    return true;
+                }
+            }
+        }
+    }
+    console.log(chat.history);
+    for (let index of indexes) {
+        searchHistory(chat.history, index);
+        console.log(path);
+    }
+}
+
+findPathToIndex(new_chat, [1,2]);
