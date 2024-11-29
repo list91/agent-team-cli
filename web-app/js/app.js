@@ -1,137 +1,183 @@
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Application initialized');
-    const input = document.querySelector('.input-container input');
-    const submitBtn = document.querySelector('.submit-btn');
-    const messagesContainer = document.querySelector('.messages');
-    let editingMessage = null;
-
-    // Функция для создания нового сообщения
-    function createMessage(text, isUser = true) {
-        console.log(`Creating new ${isUser ? 'user' : 'bot'} message: ${text.substring(0, 50)}...`);
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-
-        const avatar = document.createElement('div');
-        avatar.className = 'message-avatar';
-        avatar.textContent = isUser ? 'H1' : 'TheB.AI';
-
-        const content = document.createElement('div');
-        content.className = 'message-content';
-
-        const messageText = document.createElement('div');
-        messageText.className = 'message-text';
-        messageText.textContent = text;
-
-        const messageInfo = document.createElement('div');
-        messageInfo.className = 'message-info';
-
-        if (isUser) {
-            console.log('Adding user message controls');
-            const copyBtn = document.createElement('span');
-            copyBtn.className = 'copy-btn';
-            copyBtn.textContent = '📋';
-            copyBtn.onclick = () => {
-                console.log('Copy button clicked');
-                navigator.clipboard.writeText(text)
-                    .then(() => console.log('Text copied successfully'))
-                    .catch(err => console.error('Failed to copy text:', err));
-            };
-
-            const editBtn = document.createElement('span');
-            editBtn.className = 'edit-btn';
-            editBtn.textContent = '✏️';
-            editBtn.onclick = () => {
-                const messageTextDiv = messageDiv.querySelector('.message-text');
-                const currentText = messageTextDiv.textContent.trim();
-                console.log('Edit button clicked. Current text:', currentText);
-                
-                editingMessage = messageTextDiv;
-                input.value = currentText;
-                input.focus();
-                submitBtn.textContent = 'Сохранить';
-            };
-
-            messageInfo.appendChild(copyBtn);
-            messageInfo.appendChild(editBtn);
-        } else {
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'copy-btn';
-            copyBtn.textContent = '📋';
-            copyBtn.onclick = () => {
-                console.log('Copy button clicked for bot message');
-                const messageText = messageDiv.querySelector('.message-text').textContent;
-                navigator.clipboard.writeText(messageText)
-                    .then(() => console.log('Bot message copied successfully'))
-                    .catch(err => console.error('Failed to copy bot message:', err));
-            };
-
-            const codeBtn = document.createElement('button');
-            codeBtn.className = 'code-btn';
-            codeBtn.textContent = '💻';
-            
-            messageInfo.appendChild(copyBtn);
-            messageInfo.appendChild(codeBtn);
+let new_chat = {
+    "chat_id": 82175378125486151,
+    "history": [
+        {
+            "id": 12,
+            "index": 1,
+            "content": "Привет, чем могу помочь?",
+            "role": "assistant"
+        },
+        {
+            "id": 13,
+            "index": 1,
+            "content": "Привет, как дела?",
+            "role": "user",
+            "diffusion": [
+                {
+                    "diffusion_index": 2,
+                    "history": [
+                        {
+                            "id": 24,
+                            "index": 2,
+                            "content": "Привет, как работа?",
+                            "role": "user",
+                            "diffusion": []
+                        },
+                        {
+                            "id": 25,
+                            "index": 2,
+                            "content": "Круто",
+                            "role": "assistant"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "index": 1,
+            "content": "Хорошо, спасибо!",
+            "role": "assistant"
+        },
+        {
+            "id": 15,
+            "index": 1,
+            "content": "Как настроение?",
+            "role": "user",
+            "diffusion": []
         }
+    ]
+};
 
-        content.appendChild(messageText);
-        content.appendChild(messageInfo);
-        messageDiv.appendChild(avatar);
-        messageDiv.appendChild(content);
-        messagesContainer.appendChild(messageDiv);
-        
-        // Прокрутка к новому сообщению
-        messageDiv.scrollIntoView({ behavior: 'smooth' });
-        return messageDiv;
-    }
+function add_message_in_chat(params) {
+    let chat = params.chat;
+    let message = params.message;
+    let targetIndex = params.targetIndex;
 
-    function handleSubmit() {
-        const text = input.value.trim();
-        console.log('Handling submit with text:', text);
-        
-        if (text) {
-            if (editingMessage) {
-                console.log('Saving edited message:', text);
-                editingMessage.textContent = text;
-                submitBtn.textContent = '↑';
-                editingMessage = null;
-            } else {
-                console.log('Creating new message:', text);
-                createMessage(text, true);
-                
-                // Имитация ответа бота
-                setTimeout(() => {
-                    console.log('Generating bot response');
-                    createMessage('Это ответ на ваше сообщение от бота', false);
-                }, 1000);
+    // Функция для рекурсивного поиска по дереву с проверкой последнего сообщения
+    function findAndAddMessage(history, targetIndex, message) {
+        for (let i = 0; i < history.length; i++) {
+            let entry = history[i];
+
+            // Если найден целевой индекс
+            if (entry.index === targetIndex) {
+                // Проверка, что последнее сообщение ассистента (перед добавлением)
+                if (entry.diffusion && entry.diffusion.length > 0) {
+                    let lastDiffusionEntry = entry.diffusion[0].history[entry.diffusion[0].history.length - 1];
+                    if (lastDiffusionEntry.role !== "assistant") {
+                        console.log("Вы можете отправить сообщение только после ответа ассистента.");
+                        return false; // Не разрешено добавление
+                    }
+                }
+
+                // Создание нового сообщения
+                let newMessage = {
+                    "index": entry.index,
+                    "content": message.content,
+                    "role": message.role,
+                    "diffusion": []
+                };
+
+                // Добавляем новое сообщение в диффузию, если она существует
+                if (entry.diffusion && entry.diffusion.length > 0) {
+                    // Добавляем сообщение в первую активную ветку диффузии
+                    entry.diffusion[0].history.push(newMessage);
+                } else {
+                    // Если диффузий нет, просто добавляем новое сообщение в истории
+                    history.push(newMessage);
+                }
+                return true; // Сообщение добавлено
             }
-            input.value = '';
-        } else {
-            console.warn('Attempted to submit empty message');
+
+            // Если есть ветвление, рекурсивно ищем в подистории
+            if (entry.diffusion && entry.diffusion.length > 0) {
+                if (findAndAddMessage(entry.diffusion[0].history, targetIndex, message)) {
+                    return true; // Сообщение добавлено в какой-то ветке
+                }
+            }
         }
+        return false; // Если не найдено
     }
 
-    // Обработчики событий
-    submitBtn.addEventListener('click', () => {
-        console.log('Submit button clicked');
-        handleSubmit();
-    });
-    
-    input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            console.log('Enter key pressed');
-            handleSubmit();
-        }
-    });
+    // Начинаем поиск и добавление сообщения
+    if (!findAndAddMessage(chat.history, targetIndex, message)) {
+        console.log(`Ветка с индексом ${targetIndex} не найдена.`);
+    }
+}
+function edit_message_in_chat(params) {
+    let chat = params.chat;
+    let newContent = params.newcontent;
+    let message_id = params.message_id;
 
-    // Отмена редактирования при нажатии Escape
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && editingMessage) {
-            console.log('Canceling edit mode');
-            editingMessage = null;
-            input.value = '';
-            submitBtn.textContent = '↑';
-        }
-    });
+    // Хранить максимальный индекс для новых сообщений
+    let maxIndex = Math.max(...chat.history.map(entry => entry.index));
 
-    console.log('Event listeners initialized');
+    // Функция для рекурсивного поиска по дереву сообщений
+    function findAndEditMessage(history, messageId, newContent) {
+        for (let i = 0; i < history.length; i++) {
+            let entry = history[i];
+
+            // Если найдено сообщение по ID
+            if (entry.id === messageId) {
+                // Создание новой диффузии с новым контентом
+                let newDiffusionIndex = Date.now()+111111; // Генерируем уникальный идентификатор для диффузии
+                let newMessage = {
+                    id: Date.now(), // Генерируем уникальный ID для сообщения
+                    index: newDiffusionIndex, // Присваиваем diffusion_index как индекс сообщения
+                    content: newContent,
+                    role: entry.role, // Сохраняем роль отправителя
+                    diffusion: [] // Начинаем без вложенных диффузий
+                };
+
+                // Создание новой диффузии
+                let newDiffusion = {
+                    diffusion_index: newDiffusionIndex, // Все сообщения в диффузии имеют этот индекс
+                    history: [newMessage] // Добавляем новое сообщение в историю диффузии
+                };
+
+                // Добавляем новую диффузию к текущему сообщению
+                if (!entry.diffusion) {
+                    entry.diffusion = []; // Инициализируем, если диффузии отсутствуют
+                }
+                entry.diffusion.push(newDiffusion);
+                return true; // Сообщение отредактировано
+            }
+
+            // Если есть ветвление, рекурсивно ищем в подистории
+            if (entry.diffusion && entry.diffusion.length > 0) {
+                if (findAndEditMessage(entry.diffusion[0].history, messageId, newContent)) {
+                    return true; // Сообщение отредактировано в какой-то ветке
+                }
+            }
+        }
+        return false; // Если не найдено
+    }
+
+    // Начинаем поиск и редактирование сообщения
+    if (!findAndEditMessage(chat.history, message_id, newContent)) {
+        console.log(`Сообщение с ID ${message_id} не найдено.`);
+    }
+}
+
+// Пример использования
+edit_message_in_chat({
+    chat: new_chat,
+    newcontent: "Теперь я чувствую себя просто отлично!",
+    message_id: 14 // Замените это ID сообщения, которое необходимо отредактировать
 });
+
+
+
+
+// Пример использования
+add_message_in_chat({
+    chat: new_chat,
+    message: {
+        content: "У меня всё в порядке!",
+        role: "user"
+    },
+    targetIndex: 1 // Указываем индекс ветки, в которую нужно добавить сообщение
+});
+
+console.log(JSON.stringify(new_chat, null, 2));
+
