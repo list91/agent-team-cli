@@ -181,3 +181,90 @@ add_message_in_chat({
 
 console.log(JSON.stringify(new_chat, null, 2));
 
+function create_message_block(params) {
+    // Создаем новый div элемент
+    const newDiv = document.createElement('div');
+
+    // Устанавливаем класс и атрибут
+    newDiv.className = 'text-block';
+    newDiv.setAttribute('state_diffusion', params.state_diffusion);
+
+    // Вставляем HTML-содержимое
+    newDiv.innerHTML = `
+        <div class="indicator">
+            <button><</button>
+            <div class="branch-controls">0/0</div>
+            <button>></button>
+        </div>
+        ${params.content}
+    `;
+
+    // Добавляем новый элемент в body
+    document.body.appendChild(newDiv);
+}
+
+function render_chat(chat) {
+    // Создаем контейнер для чата
+    const chatContainer = document.createElement('div');
+    chatContainer.className = 'chat-container';
+
+    // Обрабатываем историю сообщений
+    chat.history.forEach(entry => {
+        
+        // Устанавливаем стиль в зависимости от роли
+        if (entry.role === 'user') {
+            let diffusion;
+            if (entry.diffusion && entry.diffusion.length > 0) {
+                diffusion = true;
+            }
+            create_message_block({state_diffusion: diffusion, content: entry.content});
+        } else {
+            create_message_block({state_diffusion: false, content: entry.content});
+        }
+    });
+}
+
+// Пример стилей для сообщений
+const styles = `
+<style>
+    .chat-container {
+        max-width: 600px;
+        margin: 0 auto;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        background-color: #f9f9f9;
+    }
+    .chat-message {
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 5px;
+    }
+    .user-message {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        text-align: right;
+    }
+    .assistant-message {
+        background-color: #e2e3e5;
+        color: #383d41;
+        text-align: left;
+    }
+    .diffusion {
+        background-color: #cce5ff;
+        color: #004085;
+        margin-left: 20px;
+    }
+    .message-footer {
+        font-size: 0.8em;
+        text-align: right;
+        color: #555;
+    }
+</style>
+`;
+
+// Добавляем стили в head
+document.head.insertAdjacentHTML('beforeend', styles);
+
+// Рендерим чат
+render_chat(new_chat);
