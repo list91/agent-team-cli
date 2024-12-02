@@ -3,25 +3,52 @@ import os
 import time
 import re
 
-def run_command(command):
-    """Executes a shell command with 5-second timeout and returns the result"""
+def run_command(command, timeout=5):
+    """
+    Выполняет команду в оболочке с расширенной обработкой
+    
+    :param command: Команда для выполнения
+    :param timeout: Время ожидания выполнения команды в секундах
+    :return: Результат выполнения команды или сообщение об ошибке
+    """
     try:
+        # Используем cmd.exe для более надежного выполнения команд в Windows
+        full_command = f'cmd.exe /c {command}'
+        
+        # Создаем процесс с перенаправлением вывода
         process = subprocess.Popen(
-            command, 
+            full_command, 
             shell=True, 
             stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
+            stderr=subprocess.PIPE,
             universal_newlines=True,
-            encoding='utf-8',
+            encoding='cp866',  # Кодировка для корректного отображения кириллицы в Windows
             errors='replace'
         )
+        
         try:
-            stdout, stderr = process.communicate(timeout=5)
-            return stdout if process.returncode == 0 else stderr
+            # Ожидаем завершения процесса с таймаутом
+            stdout, stderr = process.communicate(timeout=timeout)
+            
+            # Объединяем stdout и stderr для полной информации
+            output = stdout + stderr
+            
+            # Очищаем вывод от лишних пробелов
+            output = output.strip()
+            
+            # Возвращаем результат или сообщение об ошибке
+            if process.returncode == 0:
+                return output
+            else:
+                return f"Command error (code {process.returncode}): {output}"
+        
         except subprocess.TimeoutExpired:
+            # Принудительно завершаем процесс при превышении таймаута
             process.kill()
-            return "Command timed out after 5 seconds"
+            return "Command timed out after {} seconds".format(timeout)
+    
     except Exception as e:
+        # Обработка непредвиденных ошибок
         return f"Command execution error: {str(e)}"
 
 def read_file(filepath):
