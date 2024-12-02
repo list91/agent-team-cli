@@ -212,7 +212,7 @@ function create_message_block(params) {
     newDiv.innerHTML = `
         <div class="indicator">
             <button><</button>
-            <div class="branch-controls">0/0</div>
+            <div class="branch-controls">${params.current_diffusion}/${params.total_diffusion}</div>
             <button>></button>
         </div>
         ${params.content}
