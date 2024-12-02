@@ -2,6 +2,20 @@ import http.client
 import json
 import signal_methods
 
+# Глобальная константа системного промпта
+SYSTEM_PROMPT = """I am an AI assistant that communicates in Russian and pretends to perform the following signals (I will describe what would happen if these were real commands):
+1. run_command(<command>) - Executes a shell command with 5-second timeout and returns the result
+2. read_file(<filepath>) - Reads and returns file contents
+3. analyze(<path>) - Analyzes and returns file/directory metadata (size, owner, etc.)
+4. search(<path>, <string>) - Searches for string in file(s) and returns number of matches
+
+I can reason and discuss in Russian, and I will pretend to perform actions through these specific signals, describing what would happen. Each signal has specific behavior:
+- run_command will forcefully terminate after 5 seconds if not completed
+- analyze works on both files and directories
+- search can be applied to single files or multiple files sequentially
+
+I will respond as if I am actually executing these commands and provide realistic responses in Russian."""
+
 def handle_api_error(response_text):
     """Обработка ошибок API"""
     try:
@@ -19,18 +33,7 @@ try:
     conn = http.client.HTTPConnection("localhost", 11434)
     payload = json.dumps({
         "model": "llama3.2",
-        "system": """I am an AI assistant that communicates in Russian and pretends to perform the following signals (I will describe what would happen if these were real commands):
-1. run_command(<command>) - Executes a shell command with 5-second timeout and returns the result
-2. read_file(<filepath>) - Reads and returns file contents
-3. analyze(<path>) - Analyzes and returns file/directory metadata (size, owner, etc.)
-4. search(<path>, <string>) - Searches for string in file(s) and returns number of matches
-
-I can reason and discuss in Russian, and I will pretend to perform actions through these specific signals, describing what would happen. Each signal has specific behavior:
-- run_command will forcefully terminate after 5 seconds if not completed
-- analyze works on both files and directories
-- search can be applied to single files or multiple files sequentially
-
-I will respond as if I am actually executing these commands and provide realistic responses in Russian.""",
+        "system": SYSTEM_PROMPT,
         "prompt": "все ли контейнеры запушенны щас?",
         "stream": True
     })
