@@ -418,12 +418,59 @@ function findPathToIndex(chat, indexes) {
         }
         isWrite = false;
     }
-    console.log(chat.history);
+    // console.log(chat.history);
     searchHistory(chat.history, indexes[0]);
-    console.log("result", path);
+    // console.log("result", path);
     // for (let index of indexes) {
     //     searchHistory(chat.history, index);
     // }
+    return path;
 }
 
-findPathToIndex(new_chat, [1, 1732865828158]);
+// findPathToIndex(new_chat, [1, 1732865828158]);
+
+function render_chat_from_path(path) {
+    // Очищаем контейнер чата
+    const existingMessages = document.querySelectorAll('.text-block');
+    existingMessages.forEach(msg => msg.remove());
+
+    // Функция для поиска сообщения по id в истории
+    function findMessageById(history, id) {
+        for (let entry of history) {
+            if (entry.id === id) {
+                return entry;
+            }
+            // Проверяем в диффузиях
+            if (entry.diffusion) {
+                for (let diff of entry.diffusion) {
+                    const found = findMessageById(diff.history, id);
+                    if (found) return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    // Проходим по пути и отрисовываем каждое сообщение
+    path.forEach(item => {
+        const messageId = item.id_msg;
+        const message = findMessageById(new_chat.history, messageId);
+        
+        if (message) {
+            // Определяем, есть ли у сообщения диффузии
+            const hasDiffusion = message.diffusion && message.diffusion.length > 0;
+            
+            // Создаем блок сообщения
+            create_message_block({
+                state_diffusion: hasDiffusion,
+                content: message.content
+            });
+        }
+    });
+}
+
+// findPathToIndex(new_chat, [1, 1732865828158]);
+// let last_index = 2;
+let last_index = 1732865828158;
+render_chat_from_path(findPathToIndex(new_chat, [1, last_index]));
+// render_chat_from_path(findPathToIndex(new_chat, [1, 1732865828158]));
