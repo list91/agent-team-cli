@@ -198,7 +198,7 @@ add_message_in_chat({
     targetIndex: 1 // Указываем индекс ветки, в которую нужно добавить сообщение
 });
 
-console.log(JSON.stringify(new_chat, null, 2));
+// console.log(JSON.stringify(new_chat, null, 2));
 
 function create_message_block(params) {
     // Создаем новый div элемент
@@ -228,12 +228,12 @@ function findPathToIndex(chat, targetIndex) {
         for (let entry of history) {
             if (entry.index === targetIndex) {
                 // Если индекс найден, добавляем информацию в путь
-                path.push({ index: entry.index });
+                path.push({ id_msg: entry.index });
                 return true; // Остановить дальнейшие поиски
             }
 
             // Добавляем текущее сообщение в путь
-            path.push({ index: entry.index });
+            path.push({ id_msg: entry.index });
 
             // Проверяем наличие диффузий
             if (entry.diffusion) {
@@ -373,44 +373,57 @@ document.head.insertAdjacentHTML('beforeend', styles);
 
 function findPathToIndex(chat, indexes) {
     let path = [];
-
+    let q = 0
+    let isWrite = true
     function searchHistory(history, index) {
-        console.log(index);
+        // console.log(index);
+        q++;
         for (let entry of history) {
-            if(entry.id === 25){
-                console.log(entry, "+++++++++++++++++++++++++++++++++++++++++++");
+            if (!isWrite) return;
+            // debugger
+            if(entry.id === 14){
+                console.log(history, index, entry, "+++++++++++++++++++++++++++++++++++++++++++");
             }
             if (entry.index === index) {
                 if (!entry.diffusion) {
-                    path.push({ index: entry.id });
+                    path.push({ id_msg: entry.id });
+                    continue;
                 }
                 // если индекс не последний
-                console.log(indexes.indexOf(index), indexes.length, indexes.indexOf(index) < indexes.length - 1);
+                // console.log(indexes.indexOf(index), indexes.length, indexes.indexOf(index) < indexes.length - 1);
                 if (indexes.indexOf(index) < indexes.length - 1) {
 
-                    if (entry.diffusion && entry.diffusion.length > 0) {
+                    if (entry.diffusion.length > 0) {
                         let isDiffusion = false;
                         for (let diffusion of entry.diffusion) {
                             // если индекс равен индексу после значения index из массива indexes
                             if (diffusion.diffusion_index === indexes[indexes.indexOf(index) + 1]) {
-                                searchHistory(diffusion.history, indexes[indexes.indexOf(index) + 1]);
+                                console.log(diffusion.history, indexes[indexes.indexOf(index) + 1]);
                                 isDiffusion = true;
+                                searchHistory(diffusion.history, indexes[indexes.indexOf(index) + 1]);
                             }
                         }
-                        path.push({ index: entry.id });
+                        // path.push({ id_msg: entry.id });
+                        if (!isDiffusion) { // если диффузий нет подходящей
+                            path.push({ id_msg: entry.id });
+                            // return true;
+                        }
                     }
                 } else {
-                    path.push({ index: entry.id });
-                    return true;
+                    console.log("last",index);
+                    path.push({ id_msg: entry.id });
+                    // return true;
                 }
             }
         }
+        isWrite = false;
     }
     console.log(chat.history);
-    for (let index of indexes) {
-        searchHistory(chat.history, index);
-        console.log(path);
-    }
+    searchHistory(chat.history, indexes[0]);
+    console.log("result", path);
+    // for (let index of indexes) {
+    //     searchHistory(chat.history, index);
+    // }
 }
 
-findPathToIndex(new_chat, [1,2]);
+findPathToIndex(new_chat, [1, 1732865828158]);
