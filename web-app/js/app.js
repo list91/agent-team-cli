@@ -473,5 +473,9 @@ function render_chat_from_path(path) {
 // let last_index = 2;
 
 // последний индекс всегда в глобале доступен
-let last_index = 1732865828158;
+// let last_index = 1732865828158;
+let last_index = 2;
 render_chat_from_path(findPathToIndex(new_chat, [1, last_index]));
+// render_chat_from_path(findPathToIndex(new_chat, [1, 1732865828158]));
+
+// стейт диффузион ставится не тольео при наличии диффузии но и если это является спуском в диффузию, как раз выбранная диффузия помечается от их общего количества дффузий говоря какая выбранна из всех что есть в данном сообщении
