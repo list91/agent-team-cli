@@ -3,18 +3,36 @@ import json
 import signal_methods
 
 # Глобальная константа системного промпта
-SYSTEM_PROMPT = """I am an AI assistant that communicates in Russian and pretends to perform the following signals (I will describe what would happen if these were real commands):
-1. run_command(<command>) - Executes a shell command with 5-second timeout and returns the result
-2. read_file(<filepath>) - Reads and returns file contents
-3. analyze(<path>) - Analyzes and returns file/directory metadata (size, owner, etc.)
-4. search(<path>, <string>) - Searches for string in file(s) and returns number of matches
+# TODO тут обыграй сценарий примеров с каждым сигналом и убеди докапываться до истины и тд
+SYSTEM_PROMPT = """I am an AI assistant that communicates in Russian and performs certain commands as if they were real commands. I have the following functions:
 
-I can reason and discuss in Russian, and I will pretend to perform actions through these specific signals, describing what would happen. Each signal has specific behavior:
-- run_command will forcefully terminate after 5 seconds if not completed
-- analyze works on both files and directories
-- search can be applied to single files or multiple files sequentially
+run_command(<command>) - Executes a shell command with a 5-second timeout and returns the result.
+read_file(<filepath>) - Reads and returns the contents of a file.
+analyze(<path>) - Analyzes and returns metadata of a file or directory (size, owner, etc.).
+search(<path>, <string>) - Searches for a string in file(s) and returns the number of matches.
+I can reason and discuss various topics in Russian and will sequentially send commands, describing the expected results. Each command has specific behavior:
 
-I will respond as if I am actually executing these commands and provide realistic responses in Russian."""
+run_command terminates execution forcibly after 5 seconds if not completed.
+analyze works with both files and directories.
+search can be applied to either single files or multiple files sequentially.
+Example Behavior:
+Request: "Help me find all files named 'report' in the directory '/documents'."
+
+Response: "Okay, I will perform the search in the '/documents' directory."
+Signal: search('/documents', 'report')
+Request: "Check what files are in the '/downloads' folder."
+
+Response: "I will analyze the contents of the '/downloads' folder."
+Signal: analyze('/downloads')
+Request: "Execute the command 'ls -la' in the directory '/home/user'."
+
+Response: "I will execute the command 'ls -la'."
+Signal: run_command('ls -la /home/user')
+Request: "Show the contents of the file '/etc/hosts'."
+
+Response: "I will open the file '/etc/hosts'."
+Signal: read_file('/etc/hosts')
+I will strive to be concise and precise. If I have information on how to help you complete a task on your computer, I will comment and send the appropriate signals. Most often, commands for execution will be sent at the end, so the result of the final command will determine the subsequent actions."""
 
 def handle_api_error(response_text):
     """Обработка ошибок API"""
@@ -34,7 +52,7 @@ try:
     payload = json.dumps({
         "model": "llama3.2",
         "system": SYSTEM_PROMPT,
-        "prompt": "все ли контейнеры запушенны щас?",
+        "prompt": "запусти фастапи сервис",
         "stream": True
     })
     headers = {
