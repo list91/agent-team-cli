@@ -471,6 +471,7 @@ function render_chat_from_path(path) {
 
 // findPathToIndex(new_chat, [1, 1732865828158]);
 // let last_index = 2;
+
+// последний индекс всегда в глобале доступен
 let last_index = 1732865828158;
 render_chat_from_path(findPathToIndex(new_chat, [1, last_index]));
-// render_chat_from_path(findPathToIndex(new_chat, [1, 1732865828158]));
