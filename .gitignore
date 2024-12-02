@@ -1,11 +1,24 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.env/
-.venv/
-.idea/
+*.py[cod]
+*$py.class
+
+# Test generated files and directories
+test_file.txt
+test_dir/
+
+# IDE specific files
 .vscode/
+.idea/
+
+# Environment
+venv/
+env/
+.env
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
