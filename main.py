@@ -1,12 +1,23 @@
 import tkinter as tk
 from tkinter import ttk
 import datetime
+import asyncio
+import threading
+from gradio_client import Client
+import queue
+from nn import sys_prompt
 
 class ChatApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Chat Bot")
+        self.root.title("Chat")
         self.root.geometry("600x800")
+        
+        # Initialize Gradio client
+        self.client = Client("Nymbo/Qwen2.5-Coder-32B-Instruct-Serverless")
+        
+        # Message queue for async processing
+        self.message_queue = queue.Queue()
         
         # Configure style
         self.user_bg = "#e3f2fd"
@@ -55,11 +66,28 @@ class ChatApp:
         self.message_entry = ttk.Entry(input_frame)
         self.message_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
+        # Create spinner
+        self.spinner_label = ttk.Label(input_frame, text="⌛")
+        
         send_button = ttk.Button(input_frame, text="Send", command=self.send_message)
         send_button.pack(side=tk.RIGHT, padx=(10, 0))
         
         # Bind Enter key to send message
         self.message_entry.bind("<Return>", lambda e: self.send_message())
+        
+        # Start message processing thread
+        self.processing_thread = threading.Thread(target=self._process_messages, daemon=True)
+        self.processing_thread.start()
+
+    def show_spinner(self):
+        self.spinner_label.pack(side=tk.RIGHT, padx=(5, 5))
+        self.message_entry.configure(state="disabled")
+        self.root.update()
+
+    def hide_spinner(self):
+        self.spinner_label.pack_forget()
+        self.message_entry.configure(state="normal")
+        self.root.update()
 
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
@@ -88,15 +116,34 @@ class ChatApp:
         time_label.pack(anchor="ne" if is_user else "nw", padx=5)
         
         # Add message text
-        message_label = tk.Label(
+        message_text = tk.Text(
             message_frame,
-            text=text,
-            wraplength=400,
-            justify=tk.LEFT,
+            wrap=tk.WORD,
+            width=40,
+            height=0,  # Высота будет автоматически подстраиваться
+            font=("Arial", 10),
             background=self.user_bg if is_user else self.bot_bg,
-            foreground=self.user_fg if is_user else self.bot_fg
+            foreground=self.user_fg if is_user else self.bot_fg,
+            relief=tk.FLAT,
+            padx=10,
+            pady=5
         )
-        message_label.pack(anchor="e" if is_user else "w", padx=10, pady=5)
+        message_text.insert("1.0", text)
+        
+        # Добавляем тег для всего текста
+        message_text.tag_add("selectable", "1.0", "end")
+        
+        # Настраиваем привязки для копирования
+        message_text.bind("<Control-c>", lambda e: self._copy_text(e, message_text))
+        message_text.bind("<Control-a>", lambda e: self._select_all(e, message_text))
+        
+        message_text.configure(state="disabled")  # Делаем только для чтения
+        
+        # Настраиваем автоматическую высоту
+        line_count = text.count('\n') + 1
+        message_text.configure(height=line_count)
+        
+        message_text.pack(anchor="e" if is_user else "w", padx=10, pady=5)
         
         # Add buttons if needed
         if with_buttons and not is_user:
@@ -123,23 +170,74 @@ class ChatApp:
             self.create_message_bubble(message, is_user=True)
             self.message_entry.delete(0, tk.END)
             
-            # Simulate bot response
-            self.simulate_bot_response(message)
+            # Add message to processing queue
+            self.message_queue.put(message)
 
-    def simulate_bot_response(self, user_message):
-        # Simple bot logic - alternate between simple and button messages
-        if len(user_message) % 2 == 0:
-            response = f"Это сообщение с кнопками в ответ на: {user_message}"
-            self.create_message_bubble(response, is_user=False, with_buttons=True)
-        else:
-            response = f"Простой ответ на: {user_message}"
-            self.create_message_bubble(response, is_user=False)
+    def _process_messages(self):
+        while True:
+            try:
+                # Get message from queue
+                message = self.message_queue.get()
+                
+                # Show spinner
+                self.root.after(0, self.show_spinner)
+                
+                # Get AI response
+                try:
+                    result = self.client.predict(
+                        message=message,
+                        system_message=sys_prompt,
+                        max_tokens=512,
+                        temperature=0.7,
+                        top_p=0.95,
+                        api_name="/chat"
+                    )
+                    
+                    # Вывод в консоль
+                    print(f"Запрос: {message}")
+                    print(f"Ответ: {result}")
+                    
+                    # Schedule bot response in main thread
+                    self.root.after(0, self.create_message_bubble, result, False, True)
+                
+                except Exception as e:
+                    error_message = f"Ошибка при получении ответа: {str(e)}"
+                    print(error_message)
+                    
+                    # Специальная обработка ошибки rate limit
+                    if "rate limit exceeded" in str(e).lower():
+                        error_message = "Превышен лимит запросов. Попробуйте позже."
+                    
+                    self.root.after(0, self.create_message_bubble, error_message, False, False)
+                
+                finally:
+                    # Hide spinner
+                    self.root.after(0, self.hide_spinner)
+                
+            except queue.Empty:
+                continue
+            except Exception as e:
+                print(f"Error in message processing: {e}")
+                self.root.after(0, self.hide_spinner)
 
     def handle_launch(self, message):
         print(f"Запуск для сообщения: {message}")
 
     def handle_cancel(self, message):
         print(f"Отмена для сообщения: {message}")
+
+    def _copy_text(self, event, text_widget):
+        try:
+            selected_text = text_widget.get("sel.first", "sel.last")
+            self.root.clipboard_clear()
+            self.root.clipboard_append(selected_text)
+        except tk.TclError:
+            pass  # Ничего не выбрано
+        return "break"
+
+    def _select_all(self, event, text_widget):
+        text_widget.tag_add("sel", "1.0", "end")
+        return "break"
 
 if __name__ == "__main__":
     root = tk.Tk()

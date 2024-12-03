@@ -50,21 +50,16 @@ search можно применять как к отдельным файлам, 
 Строго соблюдаю правило: если требуется выполнить любой из сигналов то его вызовом я заканчиваю свой ответ.
 
 """
-client = Client("Nymbo/Qwen2.5-Coder-32B-Instruct-Serverless")
-result = client.predict(
-		message="""ollama run qwen2.5-coder:32b
-Error: llama runner process has terminated: exit status 2
-ollama -v
-ollama version is 0.4.5
-ollama logs
-Error: unknown command \"logs\" for \"ollama\"""",
-		system_message=sys_prompt,
-		max_tokens=512,
-		temperature=0.7,
-		top_p=0.95,
-		api_name="/chat"
-)
-print(result)
+# client = Client("Nymbo/Qwen2.5-Coder-32B-Instruct-Serverless")
+# result = client.predict(
+# 		message=message,
+# 		system_message=sys_prompt,
+# 		max_tokens=512,
+# 		temperature=0.7,
+# 		top_p=0.95,
+# 		api_name="/chat"
+# )
+# print(result)
 
 # print(run_command("docker ps"))
 
@@ -73,3 +68,7 @@ print(result)
 #     if "run_command" in between: 
 #         command = between.split("run_command('")[1].split("')")[0]
 #         print(run_command(command))
+# if __name__ == "__main__":
+#     root = tk.Tk()
+#     app = ChatApp(root)
+#     root.mainloop()
