@@ -6,6 +6,7 @@ import threading
 from gradio_client import Client
 import queue
 from nn import sys_prompt
+from signal_methods import *
 
 class ChatApp:
     def __init__(self, root):
@@ -119,42 +120,47 @@ class ChatApp:
         message_text = tk.Text(
             message_frame,
             wrap=tk.WORD,
-            width=40,
-            height=0,  # Высота будет автоматически подстраиваться
+            width=50,  # Увеличил ширину
+            height=100,  # Начальная высота
             font=("Arial", 10),
             background=self.user_bg if is_user else self.bot_bg,
             foreground=self.user_fg if is_user else self.bot_fg,
             relief=tk.FLAT,
             padx=10,
-            pady=5
+            pady=5,
+            borderwidth=0,
+            highlightthickness=0
         )
+        
+        # Включаем редактирование для вставки текста
+        message_text.configure(state="normal")
         message_text.insert("1.0", text)
         
-        # Добавляем тег для всего текста
-        message_text.tag_add("selectable", "1.0", "end")
+        # Автоматическая настройка высоты
+        def adjust_height(event=None):
+            lines = text.count('\n') + 1
+            message_text.configure(height=lines)
         
-        # Настраиваем привязки для копирования
-        message_text.bind("<Control-c>", lambda e: self._copy_text(e, message_text))
-        message_text.bind("<Control-a>", lambda e: self._select_all(e, message_text))
+        message_text.bind("<Configure>", adjust_height)
         
-        message_text.configure(state="disabled")  # Делаем только для чтения
+        # Делаем текст только для чтения
+        message_text.configure(state="disabled")
         
-        # Настраиваем автоматическую высоту
-        line_count = text.count('\n') + 1
-        message_text.configure(height=line_count)
+        message_text.pack(anchor="e" if is_user else "w", fill=tk.X, expand=True, padx=10, pady=5)
         
-        message_text.pack(anchor="e" if is_user else "w", padx=10, pady=5)
-        
-        # Add buttons if needed
-        if with_buttons and not is_user:
-            button_frame = ttk.Frame(message_frame, style="Bot.TFrame")
-            button_frame.pack(fill=tk.X, padx=10, pady=(0, 5))
-            
-            launch_btn = ttk.Button(button_frame, text="Запуск", command=lambda: self.handle_launch(text))
-            launch_btn.pack(side=tk.LEFT, padx=(0, 5))
-            
-            cancel_btn = ttk.Button(button_frame, text="Отмена", command=lambda: self.handle_cancel(text))
-            cancel_btn.pack(side=tk.LEFT)
+        # "№%;№:?%:;%№*(743__0=" in result:
+        if with_buttons and not is_user and "№%;№:?%:;%№*(743__0=" in text:
+            between = text.split("№%;№:?%:;%№*(743__0=")[1].split("№%;№:?%:;%№*(743__0=")[0]
+            if "run_command" in between:
+                command = between.split("run_command('")[1].split("')")[0]
+                button_frame = ttk.Frame(message_frame, style="Bot.TFrame")
+                button_frame.pack(fill=tk.X, padx=10, pady=(0, 5))
+                
+                launch_btn = ttk.Button(button_frame, text="Запуск", command=lambda: self.handle_launch(command))
+                launch_btn.pack(side=tk.LEFT, padx=(0, 5))
+                
+                cancel_btn = ttk.Button(button_frame, text="Отмена", command=lambda: self.handle_cancel(text))
+                cancel_btn.pack(side=tk.LEFT)
         
         # Schedule auto-scroll after all widgets are updated
         self.root.after(10, self._auto_scroll)
@@ -222,6 +228,7 @@ class ChatApp:
 
     def handle_launch(self, message):
         print(f"Запуск для сообщения: {message}")
+        print(f"Результат запуска: {run_command(message)}")
 
     def handle_cancel(self, message):
         print(f"Отмена для сообщения: {message}")
