@@ -1,13 +1,15 @@
 import sys
 import os
+import threading
+import queue
+import logging
+import subprocess
 # Установка кодировки для корректной работы в Windows
 sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 import datetime
-import threading
-import queue
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QTextEdit, QPushButton, QScrollArea, 
                             QFrame, QLabel, QMessageBox, QMenu)
@@ -18,21 +20,27 @@ from nn import sys_prompt
 from signal_methods import *
 
 # Подавление предупреждений Gradio
-import logging
 logging.getLogger('gradio_client').setLevel(logging.ERROR)
 
 class ConsoleOutputWidget(QTextEdit):
+    command_finished = pyqtSignal(str)  # Создаем сигнал как класс переменную
+    
     def __init__(self, command, parent=None):
         super().__init__(parent)
         self.command = command
+        self.full_output = ""  # Для хранения полного вывода
+        self.error_output = ""  # Для хранения вывода ошибок
+        self.exit_code = None  # Код завершения процесса
+        
         self.setReadOnly(True)
         self.setStyleSheet("""
             QTextEdit {
-                background-color: #2c3e50;
-                color: #ecf0f1;
+                background-color: #f0f0f0;
+                color: #333333;
                 font-family: 'Consolas', 'Courier New', monospace;
                 font-size: 10pt;
                 padding: 10px;
+                border: 1px solid #cccccc;
                 border-radius: 5px;
             }
         """)
@@ -49,39 +57,90 @@ class ConsoleOutputWidget(QTextEdit):
         # Запуск команды
         self.process.start("cmd", ["/c", command])
     
+    def process_output(self, output):
+        # Обработка дополнительного вывода от ИИ
+        self.append(f"\n[ИИ]: {output}")
+    
     def handle_stdout(self):
         # Чтение стандартного вывода
         output = bytes(self.process.readAllStandardOutput()).decode('cp866')
-        self.append(output)
+        self.full_output += output  # Накапливаем полный вывод
+        self.append(output.strip())  # Добавляем без лишних пробелов
+        print("handle_stdout", output, output.strip())
     
     def handle_stderr(self):
         # Чтение вывода ошибок
         error = bytes(self.process.readAllStandardError()).decode('cp866')
+        self.error_output += error  # Накапливаем вывод ошибок
+        self.full_output += error  # Также добавляем в полный вывод
+        
+        # Стилизация для ошибок
         self.setStyleSheet("""
             QTextEdit {
-                background-color: #c0392b;
-                color: #ecf0f1;
+                background-color: #ffebee;
+                color: #d32f2f;
                 font-family: 'Consolas', 'Courier New', monospace;
                 font-size: 10pt;
                 padding: 10px;
+                border: 1px solid #ef5350;
                 border-radius: 5px;
             }
         """)
-        self.append(f"Error: {error}")
+        self.append(f"[ОШИБКА]: {error.strip()}")
     
     def handle_finished(self, exit_code, exit_status):
+        # Сохраняем код завершения
+        self.exit_code = exit_code
+        
         # Добавляем информацию о завершении
-        status_text = f"\n[Процесс завершен. Код выхода: {exit_code}]"
+        status_color = "#4CAF50" if exit_code == 0 else "#F44336"
+        status_text = f"\n<span style='color:{status_color};'>[Процесс завершен. Код выхода: {exit_code}]</span>"
         self.append(status_text)
         
         # Автоматическая прокрутка
         self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
+        
+        # Формируем полный результат выполнения
+        result_message = f"Команда: {self.command}\n"
+        result_message += f"Код завершения: {exit_code}\n"
+        
+        if self.full_output:
+            result_message += f"Вывод:\n{self.full_output}"
+        
+        if self.error_output:
+            result_message += f"\nОшибки:\n{self.error_output}"
+        
+        # Отправляем полный вывод в ИИ
+        if hasattr(self, 'parent_bubble'):
+            self.command_finished.emit(result_message)
+    
+    def get_console_output(self):
+        # Возвращаем результат уже выполненной команды
+        result_message = f"Команда: {self.command}\n"
+        result_message += f"Код завершения: {self.exit_code}\n"
+        
+        if self.full_output:
+            result_message += f"Вывод:\n{self.full_output}"
+        
+        if self.error_output:
+            result_message += f"\nОшибки:\n{self.error_output}"
+        
+        return result_message
+    
+    def get_console_text(self):
+        # Метод для получения текста консоли как обычного текста
+        return self.toPlainText()
 
 class MessageBubble(QFrame):
-    def __init__(self, text, timestamp, is_user=True, with_buttons=False, command=None, parent=None):
+    message_processed = pyqtSignal(str)
+    
+    def __init__(self, text, timestamp, is_user=True, with_buttons=False, command=None, parent=None, message_queue=None):
         super().__init__(parent)
         self.is_user = is_user
         self.command = command
+        
+        # Создание очереди сообщений
+        self.message_queue = message_queue
         
         # Минималистичная цветовая схема
         self.user_bg = QColor("#f0f0f0")  # Светло-серый
@@ -186,13 +245,24 @@ class MessageBubble(QFrame):
     def handle_launch(self, command):
         # Создаем консольный виджет вывода
         console_output = ConsoleOutputWidget(command)
+        console_output.parent_bubble = self  # Добавляем ссылку на родительский пузырь
         
         # Добавляем консольный виджет в родительский layout
         parent_layout = self.parent().layout()
         parent_layout.insertWidget(parent_layout.count() - 1, console_output)
+        
+        # Подключаем сигнал завершения команды
+        console_output.command_finished.connect(self.send_command_result_to_ai)
     
     def handle_cancel(self, message):
         print(f"Отмена для сообщения: {message}")
+    
+    def send_command_result_to_ai(self, result):
+        # Обработка консольного вывода с ИИ
+        print("[DEBUG] Результат команды:", result)
+        
+        # Отправляем результат напрямую в очередь сообщений
+        self.message_queue.put((result, False, True))
 
 class ChatWindow(QMainWindow):
     message_processed = pyqtSignal(str, bool, bool)
@@ -301,7 +371,7 @@ class ChatWindow(QMainWindow):
     def add_message_bubble(self, text, is_user, with_buttons):
         # Создание пузырька сообщения
         timestamp = datetime.datetime.now().strftime("%H:%M")
-        bubble = MessageBubble(text, timestamp, is_user, with_buttons)
+        bubble = MessageBubble(text, timestamp, is_user, with_buttons, message_queue=self.message_queue)
         
         # Добавление в layout
         self.chat_layout.insertWidget(self.chat_layout.count() - 1, bubble)
@@ -357,6 +427,7 @@ class ChatWindow(QMainWindow):
                 
                 # Показываем спиннер в основном потоке
                 QTimer.singleShot(0, self.show_spinner)
+                print(f"ПОЛУЧЕННЫЙ СООБЩЕНИЕ: {message}")
                 
                 try:
                     # Получение ответа от AI
@@ -421,6 +492,11 @@ class ChatWindow(QMainWindow):
             self.message_input.paste()
         elif action == select_all_action:
             self.message_input.selectAll()
+    
+    def process_command_result(self, result):
+        # Обработка результата команды
+        print(f"Результат команды: {result}")
+        self.message_processed.emit(result, False, True)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
