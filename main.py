@@ -10,8 +10,8 @@ import threading
 import queue
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QTextEdit, QPushButton, QScrollArea, 
-                            QFrame, QLabel, QMessageBox)
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QSize
+                            QFrame, QLabel, QMessageBox, QMenu)
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QSize, QObject, QEvent, QProcess
 from PyQt6.QtGui import QColor, QPalette, QFont
 from gradio_client import Client
 from nn import sys_prompt
@@ -21,10 +21,67 @@ from signal_methods import *
 import logging
 logging.getLogger('gradio_client').setLevel(logging.ERROR)
 
+class ConsoleOutputWidget(QTextEdit):
+    def __init__(self, command, parent=None):
+        super().__init__(parent)
+        self.command = command
+        self.setReadOnly(True)
+        self.setStyleSheet("""
+            QTextEdit {
+                background-color: #2c3e50;
+                color: #ecf0f1;
+                font-family: 'Consolas', 'Courier New', monospace;
+                font-size: 10pt;
+                padding: 10px;
+                border-radius: 5px;
+            }
+        """)
+        
+        # Добавляем заголовок команды
+        self.append(f"$ {command}\n")
+        
+        # Запускаем команду асинхронно
+        self.process = QProcess(self)
+        self.process.readyReadStandardOutput.connect(self.handle_stdout)
+        self.process.readyReadStandardError.connect(self.handle_stderr)
+        self.process.finished.connect(self.handle_finished)
+        
+        # Запуск команды
+        self.process.start("cmd", ["/c", command])
+    
+    def handle_stdout(self):
+        # Чтение стандартного вывода
+        output = bytes(self.process.readAllStandardOutput()).decode('cp866')
+        self.append(output)
+    
+    def handle_stderr(self):
+        # Чтение вывода ошибок
+        error = bytes(self.process.readAllStandardError()).decode('cp866')
+        self.setStyleSheet("""
+            QTextEdit {
+                background-color: #c0392b;
+                color: #ecf0f1;
+                font-family: 'Consolas', 'Courier New', monospace;
+                font-size: 10pt;
+                padding: 10px;
+                border-radius: 5px;
+            }
+        """)
+        self.append(f"Error: {error}")
+    
+    def handle_finished(self, exit_code, exit_status):
+        # Добавляем информацию о завершении
+        status_text = f"\n[Процесс завершен. Код выхода: {exit_code}]"
+        self.append(status_text)
+        
+        # Автоматическая прокрутка
+        self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
+
 class MessageBubble(QFrame):
-    def __init__(self, text, timestamp, is_user=True, with_buttons=False, parent=None):
+    def __init__(self, text, timestamp, is_user=True, with_buttons=False, command=None, parent=None):
         super().__init__(parent)
         self.is_user = is_user
+        self.command = command
         
         # Минималистичная цветовая схема
         self.user_bg = QColor("#f0f0f0")  # Светло-серый
@@ -48,7 +105,7 @@ class MessageBubble(QFrame):
         layout.setContentsMargins(10, 5, 10, 5)
         layout.setSpacing(5)
         
-        # Добавление времени (опционально, можно убрать)
+        # Добавление времени
         time_label = QLabel(timestamp)
         time_label.setFont(QFont("Arial", 8))
         time_label.setStyleSheet("""
@@ -79,46 +136,45 @@ class MessageBubble(QFrame):
         layout.addWidget(message_text)
         
         # Добавление кнопок действий
-        if with_buttons and not is_user and "№%;№:?%:;%№*(743__0=" in text:
-            between = text.split("№%;№:?%:;%№*(743__0=")[1].split("№%;№:?%:;%№*(743__0=")[0]
-            if "run_command" in between:
-                command = between.split("run_command('")[1].split("')")[0]
-                button_layout = QHBoxLayout()
-                button_layout.setSpacing(10)
-                
-                launch_btn = QPushButton("Запуск")
-                launch_btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: #4CAF50;
-                        color: white;
-                        border: none;
-                        border-radius: 5px;
-                        padding: 5px 10px;
-                    }
-                    QPushButton:hover {
-                        background-color: #45a049;
-                    }
-                """)
-                launch_btn.clicked.connect(lambda: self.handle_launch(command))
-                button_layout.addWidget(launch_btn)
-                
-                cancel_btn = QPushButton("Отмена")
-                cancel_btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: #f44336;
-                        color: white;
-                        border: none;
-                        border-radius: 5px;
-                        padding: 5px 10px;
-                    }
-                    QPushButton:hover {
-                        background-color: #d32f2f;
-                    }
-                """)
-                cancel_btn.clicked.connect(lambda: self.handle_cancel(text))
-                button_layout.addWidget(cancel_btn)
-                
-                layout.addLayout(button_layout)
+        if with_buttons and not is_user and "run_command" in text:
+            between = text.split("run_command('")[1].split("')")[0]
+            command = between
+            button_layout = QHBoxLayout()
+            button_layout.setSpacing(10)
+            
+            launch_btn = QPushButton("Запуск")
+            launch_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 5px 10px;
+                }
+                QPushButton:hover {
+                    background-color: #45a049;
+                }
+            """)
+            launch_btn.clicked.connect(lambda: self.handle_launch(command))
+            button_layout.addWidget(launch_btn)
+            
+            cancel_btn = QPushButton("Отмена")
+            cancel_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #f44336;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 5px 10px;
+                }
+                QPushButton:hover {
+                    background-color: #d32f2f;
+                }
+            """)
+            cancel_btn.clicked.connect(lambda: self.handle_cancel(text))
+            button_layout.addWidget(cancel_btn)
+            
+            layout.addLayout(button_layout)
         
         self.setLayout(layout)
     
@@ -128,8 +184,12 @@ class MessageBubble(QFrame):
         text_edit.setFixedHeight(int(doc_height) + 20)  # Небольшой отступ
     
     def handle_launch(self, command):
-        print(f"Запуск для сообщения: {command}")
-        print(f"Результат запуска: {run_command(command)}")
+        # Создаем консольный виджет вывода
+        console_output = ConsoleOutputWidget(command)
+        
+        # Добавляем консольный виджет в родительский layout
+        parent_layout = self.parent().layout()
+        parent_layout.insertWidget(parent_layout.count() - 1, console_output)
     
     def handle_cancel(self, message):
         print(f"Отмена для сообщения: {message}")
@@ -184,6 +244,14 @@ class ChatWindow(QMainWindow):
         self.message_input = QTextEdit()
         self.message_input.setMaximumHeight(50)
         self.message_input.textChanged.connect(self.adjust_input_height)
+        
+        # Добавляем обработку нажатия Enter
+        self.message_input.installEventFilter(self)
+        
+        # Настройка контекстного меню для копирования/вставки
+        self.message_input.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.message_input.customContextMenuRequested.connect(self.show_context_menu)
+        
         input_layout.addWidget(self.message_input)
         
         send_button = QPushButton("Send")
@@ -198,6 +266,17 @@ class ChatWindow(QMainWindow):
         # Запуск потока обработки сообщений
         self.processing_thread = threading.Thread(target=self._process_messages, daemon=True)
         self.processing_thread.start()
+    
+    def eventFilter(self, obj, event):
+        # Обработка нажатия Enter в поле ввода
+        if obj is self.message_input and event.type() == event.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+                # Проверяем, не нажат ли Shift
+                modifiers = event.modifiers()
+                if modifiers != Qt.KeyboardModifier.ShiftModifier:
+                    self.send_message()
+                    return True  # Событие обработано
+        return super().eventFilter(obj, event)
     
     def adjust_input_height(self):
         doc_height = self.message_input.document().size().height()
@@ -314,6 +393,34 @@ class ChatWindow(QMainWindow):
             except Exception as e:
                 print(f"Error in message processing: {e}")
                 QTimer.singleShot(0, self.hide_spinner)
+    
+    def show_context_menu(self, pos):
+        # Создаем контекстное меню
+        context_menu = QMenu(self)
+        
+        # Действия копирования, вырезания и вставки
+        copy_action = context_menu.addAction("Копировать")
+        cut_action = context_menu.addAction("Вырезать")
+        paste_action = context_menu.addAction("Вставить")
+        
+        # Добавляем разделитель
+        context_menu.addSeparator()
+        
+        # Действия выделения
+        select_all_action = context_menu.addAction("Выделить все")
+        
+        # Получаем выбранное действие
+        action = context_menu.exec(self.message_input.mapToGlobal(pos))
+        
+        # Обработка действий
+        if action == copy_action:
+            self.message_input.copy()
+        elif action == cut_action:
+            self.message_input.cut()
+        elif action == paste_action:
+            self.message_input.paste()
+        elif action == select_all_action:
+            self.message_input.selectAll()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
