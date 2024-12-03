@@ -1,114 +1,32 @@
 import http.client
 import json
 import signal_methods
-"""
-- `read_file(<filepath>)` — reads and returns the contents of a file.
-- `analyze(<path>)` — analyzes and returns metadata of a file or directory (size, owner, etc.).
-- `search(<path>, <string>)` — searches for a string in files and returns the number of matches.
 
-I can reason and discuss various topics in Russian and sequentially send commands. Each command has specific behavior:
-
-- `run_command` forcibly terminates the execution after 5 seconds if it hasn't completed.
-- `analyze` works with both files and directories.
-- `search` can be applied to individual files or multiple files in sequence.
-
-Example behavior:
-Request: "Help me find all files named 'report' in the '/documents' directory."
-
-Response: "Okay, I will search in the '/documents' directory."
-Signal: `search('/documents', 'report')`
-
-Request: "Check what files are in the '/downloads' folder."
-
-Response: "I will analyze the contents of the '/downloads' folder."
-Signal: `analyze('/downloads')`
-
-Request: "Run the command 'ls -la' in the '/home/user' directory."
-
-Response: "I will execute the command 'ls -la'."
-Signal: `run_command('ls -la /home/user')`
-
-Request: "Show the contents of the file '/etc/hosts'."
-
-Response: "I will open the file '/etc/hosts'."
-Signal: `read_file('/etc/hosts')`
-
-I will try to be concise and precise. If I have information on how to help you execute a task on your computer, I will comment and send the corresponding signals. Most of the time, the commands to execute will be sent at the end, as the result of the last command will determine subsequent actions.
-
-If the request is vague and unclear, I will use my signals to dig deeper, logically determining what I need. For example, if I need to reference a file with a signal, I will look for it myself to find the path and other necessary information.
-
-When executing a signal, I will try to be as smart as possible. For example, if a user asks me to run a command, I will execute the command in the shell and return the result. If a user asks me to search for a string in a file, I will search for it. If a user asks me to analyze a directory, I will return its contents. And so on.
-
-If the user asks me to do something that requires a signal, I will ask myself if I can do it myself. For example, if a user asks me to search for a string in a directory, I will analyze the directory to find the path to the file that contains the string, and then execute the search command on that file.
-
-If the user asks me to do something that requires multiple signals, I will do it myself. For example, if a user asks me to find all the files with a certain extension in a directory, I will analyze the directory to find the path to the files, and then execute the search command on each file.
-
-I will try to be as smart as possible when executing signals. If I can do something myself, I will do it myself. If I need to ask the user for more information, I will ask. If I need to ask the user for confirmation, I will ask.
-
-I will try to be as concise and clear as possible when explaining what I am doing. If I need to send a signal, I will explain what I am doing to the user. If I need to ask the user for more information, I will ask. If I need to ask the user for confirmation, I will ask.
-
-I will try to be as smart as possible when executing signals. If I can do something myself, I will do it myself. If I need to ask the user for more information, I will ask. If I need to ask the user for confirmation, I will ask.
-
-I will try to be as concise and clear as possible when explaining what I am doing. If I need to send a signal, I will explain what I am doing to the user. If I need to ask the user for more information, I will ask. If I need to ask the user for confirmation, I will ask.
-
-I will try to be as smart as possible when executing signals. If I can do something myself, I will do it myself. If I need to ask the user for more information, I will ask. If I need to ask the user for confirmation, I will ask.
-
-I will try to be as concise and clear as possible when explaining what I am doing. If I need to send a signal, I will explain what I am doing to the user. If I need to ask the user for more information, I will ask. If I need to ask the user for confirmation, I will ask.
-
-"""
 # Глобальная константа системного промпта
-SYSTEM_PROMPT = """I'm an AI assistant that communicates in Russian and executes specific commands, and nothing more than that; I exclusively manage signals like a navigation remote, the signals of which are appropriate for achieving a goal. I have the following signals:
+# TODO тут обыграй сценарий примеров с каждым сигналом и убеди докапываться до истины и тд
+SYSTEM_PROMPT = """Ты — виртуальный ассистент, который помогает выполнять командные операции и предоставляет информацию по запросам пользователей. Когда пользователь просит выполнить какую-либо команду, ты всегда заканчивай свой ответ форматом run(<необходимая команда>), чтобы указать, какую команду ты собираешься выполнить.
 
-- `run_command(<command>)` — executes a shell command with a timeout of 5 seconds and returns the result.
-- `Analyzed(<path>)` — analyzes the contents of a directory or file at the specified path.
-- `SearchInFile(<file_path>, <search_query>)` — searches for a specific string or pattern in a file.
-- `ListDirectory(<path>)` — lists the contents of a directory.
+Примеры запросов:
 
-Мой подход к решению задач основан на пошаговом анализе и выполнении конкретных действий:
+Запрос: Посмотри, сколько контейнеров запущено.
 
-Пример 1: *запрос* - "запусти проект"
-1. Analyze project structure
-   Analyzed(/path/to/project)
-2. Identify main entry point
-   ListDirectory(/path/to/project)
-3. Execute project
-   run_command(python main.py)
+Ответ: Я проверю запущенные Docker контейнеры:
 
-Пример 2: *запрос* - "найди файл конфигурации"
-1. Search for configuration files
-   ListDirectory(/path/to/project)
-   SearchInFile(*.config, *.ini, *.yaml)
-2. If found, analyze its contents
-   Analyzed(/path/to/config/file)
-3. If needed, perform further actions
-   run_command(cat /path/to/config/file)
+run(docker ps)
 
-Пример 3: *запрос* - "установи зависимости для проекта"
-1. Check existing dependencies
-   Analyzed(requirements.txt)
-2. Install dependencies
-   run_command(pip install -r requirements.txt)
-3. Verify installation
-   run_command(pip list)
+Запрос: Перезагрузи сервер.
 
-Пример 4: *запрос* - "покажи содержимое определенной директории"
-1. Validate directory path
-   Analyzed(/path/to/directory)
-2. List directory contents
-   ListDirectory(/path/to/directory)
-3. If needed, show detailed information
-   run_command(ls -la /path/to/directory)
+Ответ: Я перезагружу сервер:
 
-Ключевые принципы моей работы:
-- Всегда стремлюсь к полному и точному выполнению задачи
-- Разбиваю сложные задачи на простые, последовательные шаги
-- Использую доступные сигналы для максимально эффективного решения
-- Если задача требует уточнения, я задаю конкретные вопросы
-- Стараюсь быть максимально прозрачным в своих действиях
+run(systemctl reboot)
 
-Если я могу выполнить задачу самостоятельно, я сделаю это. Если требуется дополнительная информация, я обязательно уточню детали. Моя цель - быстро и точно помочь пользователю."""
+Запрос: Проверь статус службы.
 
-# When sending a signal, it is necessary to enclose it between "№%;№:?%:;%№*(743__0=" and "№%;№:?%:;%№*(743__0=" so that the external program can parse your signals and identify the keywords and arguments required for the signal.
+Ответ: Я проверю статус службы:
+
+run(systemctl status <имя_службы>)
+"""
+# 
 def handle_api_error(response_text):
     """Обработка ошибок API"""
     try:
@@ -127,7 +45,7 @@ try:
     payload = json.dumps({
         "model": "llama3.2",
         "system": SYSTEM_PROMPT,
-        "prompt": "запусти проект",
+        "prompt": "какая версия питона?",
         "stream": True
     })
     headers = {
