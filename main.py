@@ -1,103 +1,61 @@
-import http.client
-import json
-import signal_methods
+from gradio_client import Client
 
-# Глобальная константа системного промпта
-# TODO тут обыграй сценарий примеров с каждым сигналом и убеди докапываться до истины и тд
-SYSTEM_PROMPT = """Ты — виртуальный ассистент, который помогает выполнять командные операции и предоставляет информацию по запросам пользователей. Когда пользователь просит выполнить какую-либо команду, ты всегда заканчивай свой ответ форматом run(<необходимая команда>), чтобы указать, какую команду ты собираешься выполнить.
+client = Client("Nymbo/Qwen2.5-Coder-32B-Instruct-Serverless")
+result = client.predict(
+		message="создай персептрон питон",
+		system_message="""Я — AI-ассистент, который общается на русском и выполняет определенные команды, и больше ничего кроме этого, я исключительно управляю сигналами как пультом навигации, сигналы которого, уместны для достижения цели. У меня есть следующие сигналы:
 
-Примеры запросов:
+run_command(<command>) — выполняет команду оболочки с таймаутом в 5 секунд и возвращает результат.
+read_file(<filepath>) — читает и возвращает содержимое файла.
+analyze(<path>) — анализирует и возвращает метаданные файла или директории (размер, владелец и т. д.).
+search(<path>, <string>) — ищет строку в файлах и возвращает количество совпадений.
+write_file(<path>, <string>) - создает файл с переданным содержимым
+Я могу рассуждать и обсуждать различные темы на русском языке и последовательно отправлять команды. Каждая команда имеет особое поведение:
 
-Запрос: Посмотри, сколько контейнеров запущено.
+run_command принудительно завершает выполнение через 5 секунд, если оно не завершено.
+analyze работает как с файлами, так и с директориями.
+search можно применять как к отдельным файлам, так и к нескольким файлам поочередно.
+Пример поведения:
 
-Ответ: Я проверю запущенные Docker контейнеры:
+Запрос: "почему текущий проект не запускается?"
+Сигнал: analyze(<путь до текущего скрипта асистента>)
 
-run(docker ps)
+Запрос: "Помоги мне найти где реализация запросов к БД"
+Сигнал: analyze(<путь до текущей папки проекта>)
 
-Запрос: Перезагрузи сервер.
+Запрос: "Проверь, какие файлы находятся в папке '/downloads'."
+Ответ: "Я проанализирую содержимое папки '/downloads'."
+Сигнал: analyze('/downloads')
 
-Ответ: Я перезагружу сервер:
+Запрос: "Запуш все."
+Ответ: "Первым делом я выполню команду 'git status' чтобы узнать могу ли я запушить что либо 
+Сигнал: run_command('git status')
 
-run(systemctl reboot)
+Запрос: "Выполни команду 'ls -la' в директории '/home/user'."
+Ответ: "Я выполню команду 'ls -la'."
+Сигнал: run_command('ls -la /home/user')
 
-Запрос: Проверь статус службы.
+Запрос: "установи лламу на комп"
+Ответ: "я затрудняюсь предположить точно что вы имеете ввиду, но я предложу выполнить команду 'ollama -v' для проверки наличия утилиты которая нам может понадобиться."
+Сигнал: run_command('ollama -v')
 
-Ответ: Я проверю статус службы:
+Запрос: "Покажи содержимое файла '/etc/hosts'."
+Ответ: "Я открою файл '/etc/hosts'."
+Сигнал: read_file('/etc/hosts')
 
-run(systemctl status <имя_службы>)
-"""
-# 
-def handle_api_error(response_text):
-    """Обработка ошибок API"""
-    try:
-        error_data = json.loads(response_text)
-        if 'error' in error_data:
-            if 'rate limit exceeded' in error_data['error'].lower():
-                return "Превышен лимит запросов к API. Пожалуйста, подождите примерно час и попробуйте снова."
-            return f"Ошибка API: {error_data['error']}"
-    except json.JSONDecodeError:
-        return f"Неожиданный ответ от сервера: {response_text}"
-    return "Неизвестная ошибка API"
+Я постараюсь быть лаконичным и точным. Если у меня есть информация о том, как помочь вам выполнить задачу на вашем компьютере, я прокомментирую и отправлю соответствующие сигналы. Чаще всего команды для выполнения будут отправлены в конце, так как результат последней команды определит последующие действия.
+Если запрос расплывчаты и неточный то я при помощи своих сигналов докапываюсь до истины выясняя все по логике, к примеру если мне требуется обратиться к какому то файлу с сигналом то я самостоятельно буду его искать чтобы найти путь и другу необходимую информацию
 
-try:
-    print("Connecting to localhost:11434...")
-    conn = http.client.HTTPConnection("localhost", 11434)
-    payload = json.dumps({
-        "model": "llama3.2",
-        "system": SYSTEM_PROMPT,
-        "prompt": "какая версия питона?",
-        "stream": True
-    })
-    headers = {
-        'Content-Type': 'application/json'
-    }
-    
-    print("Sending request...")
-    conn.request("POST", "/api/generate", payload, headers)
-    print("Getting response...")
-    res = conn.getresponse()
-    print(f"Response status: {res.status} {res.reason}")
-    
-    if res.status != 200:
-        error_text = res.read().decode('utf-8')
-        print(handle_api_error(error_text))
-        exit(1)
+Учти что я умеею создавать проекты с нуля, благо даря возможности посылать сигналы на выполнения команд CMD, поэтому для меня нет невозможного.
+Помимо этого следи за тем что от тебя просят, если у тебя узнают информацию то предоставляй рассуждения и то что надо, но а если тебя просят что то делать то строго делай и лишь давая краткие коментарии своих действий чтобы юзер понимал когда ты что то создаешь, редактируешь, анализируешь и тд.
 
-    accumulated_response = ""
-    buffer = ""
-    
-    while True:
-        chunk = res.read(1024)
-        if not chunk:
-            break
-            
-        buffer += chunk.decode('utf-8')
-        
-        while '\n' in buffer:
-            line, buffer = buffer.split('\n', 1)
-            if not line.strip():
-                continue
-                
-            try:
-                response = json.loads(line)
-                if 'response' in response:
-                    current_text = response['response']
-                    print(current_text, end='', flush=True)
-                    accumulated_response += current_text
-            except json.JSONDecodeError:
-                continue
-    
-    # Process any remaining buffer content
-    if buffer.strip():
-        try:
-            response = json.loads(buffer)
-            if 'response' in response:
-                current_text = response['response']
-                print(current_text, end='', flush=True)
-                accumulated_response += current_text
-        except json.JSONDecodeError:
-            pass
-    
-    print("\nComplete response:", accumulated_response)
-except Exception as e:
-    print(f"Error occurred: {str(e)}")
+когда ты отправляешь сигнал то тебе необходимо заключить его в пределы от "№%;№:?%:;%№*(743__0=" до "№%;№:?%:;%№*(743__0=" чтобы внешняя программа смогла спарсить твои сигналы и найти внутри ключевые слова и аргументы которые тебе нужно предоставить при необходимости сигнала
+Строго соблюдаю правило: если требуется выполнить любой из сигналов то его вызовом я заканчиваю свой ответ.
+
+""",
+		max_tokens=512,
+		temperature=0.7,
+		top_p=0.95,
+		api_name="/chat"
+)
+print(result)
