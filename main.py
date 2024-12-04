@@ -15,8 +15,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QFrame, QMessageBox, QMenu, QSizePolicy, QTextEdit)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QSize, QObject, QEvent, QProcess
 from PyQt6.QtGui import QColor, QPalette, QFont
-from gradio_client import Client
-from nn import sys_prompt
+from nn import AIClient, sys_prompt
 from signal_methods import *
 
 # Подавление предупреждений Gradio
@@ -378,21 +377,10 @@ class ChatWindow(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Chat Bot")
-        self.resize(600, 800)
+        self.setWindowTitle("LlamaDevAssist")
         
-        # Инициализация Gradio клиента
-        try:
-            self.client = Client("Nymbo/Qwen2.5-Coder-32B-Instruct-Serverless")
-        except Exception as e:
-            print(f"Ошибка инициализации Gradio клиента: {e}")
-            # Показываем диалог с ошибкой
-            error_dialog = QMessageBox()
-            error_dialog.setIcon(QMessageBox.Icon.Critical)
-            error_dialog.setText("Ошибка подключения к AI")
-            error_dialog.setInformativeText(f"Не удалось установить соединение: {e}")
-            error_dialog.setWindowTitle("Ошибка")
-            error_dialog.exec()
+        # Инициализируем AI клиент
+        self.ai_client = AIClient()
         
         # Очередь сообщений
         self.message_queue = queue.Queue()
@@ -543,14 +531,7 @@ class ChatWindow(QMainWindow):
                 
                 try:
                     # Получение ответа от AI
-                    result = self.client.predict(
-                        message=message,
-                        system_message=sys_prompt,
-                        max_tokens=512,
-                        temperature=0.7,
-                        top_p=0.95,
-                        api_name="/chat"
-                    )
+                    result = self.ai_client.get_response(message)
                     
                     # Вывод в консоль
                     print(f"Запрос: {message}")

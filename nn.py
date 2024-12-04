@@ -1,108 +1,198 @@
-from gradio_client import Client
+from ollama_client import OllamaClient
 from signal_methods import *
-sys_prompt = """Я — AI-ассистент, который общается на русском и выполняет определенные команды, и больше ничего кроме этого, я исключительно управляю сигналами как пультом навигации, сигналы которого, уместны для достижения цели. У меня есть только один сигнал:
+import http.client
+import json
+import re
+import logging
 
-run_command(<command>) — выполняет команду оболочки с таймаутом в 5 секунд и возвращает результат.
+# Настройка логирования
+logging.basicConfig(
+    level=logging.DEBUG, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('ai_client_debug.log', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
-Я могу рассуждать и обсуждать различные темы на русском языке и последовательно отправлять команды для достижения желаемого результата.
+sys_prompt = """You are a Russian-speaking AI assistant that can execute commands and provide assistance. You have access to one signal:
 
-Пример поведения:
+run_command(<command>) - executes a shell command with a 5-second timeout and returns the result.
 
-Запрос: "почему текущий проект не запускается?"
-Сигнал: run_command(<CMD команда для анализа текущего проекта>)
+When sending a signal, you must enclose it between №%;№:?%:;%№*(743__0= and №%;№:?%:;%№*(743__0= markers so the external program can parse your signals.
 
-Запрос: "Помоги мне найти где реализация запросов к БД"
-Сигнал: run_command(<CMD команда для анализа текущей папки проекта и содержимого его исходников>)
+Important rules:
+1. Always communicate in Russian
+2. If you need to execute a command, end your response with the signal
+3. Be concise and clear in your responses
+4. Format signals exactly as shown: №%;№:?%:;%№*(743__0=run_command('command')№%;№:?%:;%№*(743__0="""
 
-Запрос: "Проверь, какие файлы находятся в папке '/downloads'."
-Ответ: "Я проанализирую содержимое папки '/downloads'."
-Сигнал: run_command(<CMD команда для анализа папки '/downloads'>)
+class AIClient:
+    def __init__(self):
+        self.conversation_history = []
+        
+    def add_message(self, role, content):
+        self.conversation_history.append({"role": role, "content": content})
+        
+    def get_response(self, user_input):
+        # Обработка различных типов входных данных
+        if isinstance(user_input, tuple):
+            user_input = str(user_input)
+        
+        # Добавляем системный промпт в начало истории, если она пуста
+        if not self.conversation_history:
+            self.add_message("system", sys_prompt)
+            
+        # Добавляем сообщение пользователя
+        self.add_message("user", user_input)
+        
+        try:
+            # Получаем ответ от модели
+            response = self.get_ai_response(user_input)
+            
+            if response:
+                # Проверяем наличие сигнала выполнения команды
+                if "№%;№:?%:;%№*(743__0=" in response:
+                    # Извлекаем команду между маркерами
+                    match = re.search(r'№%;№:?%:;%№\*\(743__0=(.*?)№%;№:?%:;%№\*\(743__0=', response)
+                    if match:
+                        command = match.group(1)
+                        # Выполняем команду и получаем полный результат
+                        cmd_result = run_command(command)
+                        
+                        # Форматируем результат для более понятного вывода
+                        formatted_result = f"""
+Выполнена команда: {command}
 
-Запрос: "Запуш все."
-Ответ: "Первым делом я выполню команду 'git status' чтобы узнать могу ли я запушить что либо 
-Сигнал: run_command('git status')
+Полный вывод команды:
+{cmd_result[0]}
 
-Запрос: "Выполни команду 'ls -la' в директории '/home/user'."
-Ответ: "Я выполню команду 'ls -la'."
-Сигнал: run_command('ls -la /home/user')
-
-Запрос: "установи лламу на комп"
-Ответ: "я затрудняюсь предположить точно что вы имеете ввиду, но я предложу выполнить команду 'ollama -v' для проверки наличия утилиты которая нам может понадобиться."
-Сигнал: run_command('ollama -v')
-
-Запрос: "Покажи содержимое файла '/etc/hosts'."
-Ответ: "Я открою файл '/etc/hosts'."
-Сигнал: run_command(<CMD команда для анализа файла '/etc/hosts'>)
-
-Я постараюсь быть лаконичным и точным. Если у меня есть информация о том, как помочь вам выполнить задачу на вашем компьютере, я прокомментирую и отправлю соответствующие сигналы. Чаще всего команды для выполнения будут отправлены в конце, так как результат последней команды определит последующие действия.
-Если запрос расплывчаты и неточный то я при помощи своих сигналов докапываюсь до истины выясняя все по логике, к примеру если мне требуется обратиться к какому то файлу с сигналом то я самостоятельно буду его искать чтобы найти путь и другу необходимую информацию
-
-Учти что я умеею создавать проекты с нуля, благо даря возможности посылать сигналы на выполнения команд CMD, поэтому для меня нет невозможного.
-Помимо этого следи за тем что от тебя просят, если у тебя узнают информацию то предоставляй рассуждения и то что надо, но а если тебя просят что то делать то строго делай и лишь давая краткие коментарии своих действий чтобы юзер понимал когда ты что то создаешь, редактируешь, анализируешь и тд.
-
-когда ты отправляешь сигнал то тебе необходимо заключить его в пределы от №%;№:?%:;%№*(743__0= до №%;№:?%:;%№*(743__0= чтобы внешняя программа смогла спарсить твои сигналы и найти внутри ключевые слова и аргументы которые тебе нужно предоставить при необходимости сигнала
-Строго соблюдаю правило: если требуется выполнить любой из сигналов то его вызовом я заканчиваю свой ответ.
-
+Код завершения: {cmd_result[1]}
+Успешность выполнения: {'Успешно' if cmd_result[1] == 0 else 'Ошибка'}
 """
-# sys_prompt = """Я — AI-ассистент, который общается на русском и выполняет определенные команды, и больше ничего кроме этого, я исключительно управляю сигналами как пультом навигации, сигналы которого, уместны для достижения цели. У меня есть следующие сигналы:
+                        # Логируем полную информацию о результате команды
+                        logger.debug(f"Результат команды: {cmd_result}")
+                        
+                        # Создаем полный текст для передачи в ИИ
+                        full_command_context = f"""
+Пользователь запросил выполнить команду: {command}
 
-# run_command(<command>) — выполняет команду оболочки с таймаутом в 5 секунд и возвращает результат.
-# read_file(<filepath>) — читает и возвращает содержимое файла.
-# analyze(<path>) — анализирует и возвращает метаданные файла или директории (размер, владелец и т. д.).
-# search(<path>, <string>) — ищет строку в файлах и возвращает количество совпадений.
-# write_file(<path>, <string>) - создает файл с переданным содержимым
-# Я могу рассуждать и обсуждать различные темы на русском языке и последовательно отправлять команды. Каждая команда имеет особое поведение:
+{formatted_result}
 
-# run_command принудительно завершает выполнение через 5 секунд, если оно не завершено.
-# analyze работает как с файлами, так и с директориями.
-# search можно применять как к отдельным файлам, так и к нескольким файлам поочередно.
-# Пример поведения:
+Прошу проанализировать результат выполнения команды и дать пояснения."""
+                        
+                        # Логируем полный контекст, который будет передан
+                        logger.debug(f"Полный контекст для ИИ:\n{full_command_context}")
+                        
+                        # Добавляем результат к ответу
+                        response += f"\n\nРезультат выполнения команды:\n{formatted_result}"
+                
+                # Добавляем ответ в историю
+                self.add_message("assistant", response)
+                return response
+            else:
+                return "Извините, произошла ошибка при получении ответа от модели."
+                
+        except Exception as e:
+            logger.error(f"Ошибка при получении ответа: {e}")
+            return f"Произошла ошибка: {str(e)}"
+            
+    def reset_conversation(self):
+        self.conversation_history = []
+        
+    def get_ai_response(self, prompt):
+        try:
+            # Обработка различных типов входных данных
+            if isinstance(prompt, tuple):
+                prompt = str(prompt)
+            
+            # Логируем входящий промпт
+            logger.debug(f"Входящий промпт: {prompt}")
+            
+            print("Connecting to localhost:11434...")
+            conn = http.client.HTTPConnection("localhost", 11434)
+            
+            # Для Windows-совместимой команды используем альтернативный вариант подсчета
+            if "docker ps" in prompt and "wc -l" in prompt:
+                prompt += "\n\nВажно: в Windows используй команду 'docker ps -q | find /c /v \"\"' вместо 'docker ps | wc -l'"
+            
+            payload = json.dumps({
+                "model": "qwen2.5-coder",
+                "system": sys_prompt,
+                "prompt": prompt,
+                "stream": True
+            })
+            
+            # Логируем полный payload
+            logger.debug(f"Payload для запроса:\n{payload}")
+            
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            
+            print("Sending request...")
+            conn.request("POST", "/api/generate", payload, headers)
+            print("Getting response...")
+            res = conn.getresponse()
+            print(f"Response status: {res.status} {res.reason}")
+            
+            # Логируем статус ответа
+            logger.debug(f"Статус ответа: {res.status} {res.reason}")
+            
+            accumulated_response = ""
+            buffer = b""
+            
+            while True:
+                chunk = res.read(1024)
+                if not chunk:
+                    break
+                    
+                buffer += chunk
+                
+                while b'\n' in buffer:
+                    line, buffer = buffer.split(b'\n', 1)
+                    if not line.strip():
+                        continue
+                    
+                    try:
+                        # Декодируем строку с указанием кодировки
+                        line_str = line.decode('utf-8', errors='replace')
+                        response = json.loads(line_str)
+                        if 'response' in response:
+                            current_text = response['response']
+                            print(current_text, end='', flush=True)
+                            accumulated_response += current_text
+                    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                        logger.error(f"Ошибка декодирования: {e}")
+                        continue
+            
+            # Process any remaining buffer content
+            if buffer.strip():
+                try:
+                    # Декодируем оставшийся буфер
+                    buffer_str = buffer.decode('utf-8', errors='replace')
+                    response = json.loads(buffer_str)
+                    if 'response' in response:
+                        current_text = response['response']
+                        print(current_text, end='', flush=True)
+                        accumulated_response += current_text
+                except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                    logger.error(f"Ошибка финального декодирования: {e}")
+            
+            print("\nComplete response:", accumulated_response)
+            
+            # Логируем полный накопленный ответ
+            logger.debug(f"Полный ответ от модели:\n{accumulated_response}")
+            
+            return accumulated_response
+            
+        except Exception as e:
+            logger.error(f"Критическая ошибка: {e}")
+            return None
 
-# Запрос: "почему текущий проект не запускается?"
-# Сигнал: analyze(<путь до текущего скрипта асистента>)
-
-# Запрос: "Помоги мне найти где реализация запросов к БД"
-# Сигнал: analyze(<путь до текущей папки проекта>)
-
-# Запрос: "Проверь, какие файлы находятся в папке '/downloads'."
-# Ответ: "Я проанализирую содержимое папки '/downloads'."
-# Сигнал: analyze('/downloads')
-
-# Запрос: "Запуш все."
-# Ответ: "Первым делом я выполню команду 'git status' чтобы узнать могу ли я запушить что либо 
-# Сигнал: run_command('git status')
-
-# Запрос: "Выполни команду 'ls -la' в директории '/home/user'."
-# Ответ: "Я выполню команду 'ls -la'."
-# Сигнал: run_command('ls -la /home/user')
-
-# Запрос: "установи лламу на комп"
-# Ответ: "я затрудняюсь предположить точно что вы имеете ввиду, но я предложу выполнить команду 'ollama -v' для проверки наличия утилиты которая нам может понадобиться."
-# Сигнал: run_command('ollama -v')
-
-# Запрос: "Покажи содержимое файла '/etc/hosts'."
-# Ответ: "Я открою файл '/etc/hosts'."
-# Сигнал: read_file('/etc/hosts')
-
-# Я постараюсь быть лаконичным и точным. Если у меня есть информация о том, как помочь вам выполнить задачу на вашем компьютере, я прокомментирую и отправлю соответствующие сигналы. Чаще всего команды для выполнения будут отправлены в конце, так как результат последней команды определит последующие действия.
-# Если запрос расплывчаты и неточный то я при помощи своих сигналов докапываюсь до истины выясняя все по логике, к примеру если мне требуется обратиться к какому то файлу с сигналом то я самостоятельно буду его искать чтобы найти путь и другу необходимую информацию
-
-# Учти что я умеею создавать проекты с нуля, благо даря возможности посылать сигналы на выполнения команд CMD, поэтому для меня нет невозможного.
-# Помимо этого следи за тем что от тебя просят, если у тебя узнают информацию то предоставляй рассуждения и то что надо, но а если тебя просят что то делать то строго делай и лишь давая краткие коментарии своих действий чтобы юзер понимал когда ты что то создаешь, редактируешь, анализируешь и тд.
-
-# когда ты отправляешь сигнал то тебе необходимо заключить его в пределы от №%;№:?%:;%№*(743__0= до №%;№:?%:;%№*(743__0= чтобы внешняя программа смогла спарсить твои сигналы и найти внутри ключевые слова и аргументы которые тебе нужно предоставить при необходимости сигнала
-# Строго соблюдаю правило: если требуется выполнить любой из сигналов то его вызовом я заканчиваю свой ответ.
-
-# """
-# client = Client("Nymbo/Qwen2.5-Coder-32B-Instruct-Serverless")
-# result = client.predict(
-# 		message=message,
-# 		system_message=sys_prompt,
-# 		max_tokens=512,
-# 		temperature=0.7,
-# 		top_p=0.95,
-# 		api_name="/chat"
-# )
+# client = AIClient()
+# result = client.get_response(message)
 # print(result)
 
 # print(run_command("docker ps"))

@@ -3,4 +3,5 @@ json
 signal_methods
 gradio_client>=0.6.0
 PyQt6>=6.4.0
+requests>=2.31.0
 tkinter
