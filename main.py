@@ -248,10 +248,30 @@ class MessageBubble(QFrame):
             layout.addWidget(message_container)
             return
         else:
-            message_text = QLabel(text)
+            message_text = QLabel()
             message_text.setWordWrap(True)
-            message_text.setTextFormat(Qt.TextFormat.PlainText)
+            message_text.setTextFormat(Qt.TextFormat.RichText)
             message_text.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            
+            # Проверяем наличие команды в тексте
+            if "№%;№:?%:;%№*(743__0=" in text:
+                parts = text.split("№%;№:?%:;%№*(743__0=")
+                formatted_text = ""
+                for i, part in enumerate(parts):
+                    if i % 2 == 0:  # Обычный текст
+                        formatted_text += f'<span style="margin-left: 8px;">{part}</span>'
+                    else:  # Команда
+                        # Извлекаем команду из текста, если она в формате run_command('command')
+                        command_text = part
+                        if "run_command('" in part and "')" in part:
+                            try:
+                                command_text = part.split("run_command('")[1].split("')")[0]
+                            except IndexError:
+                                pass  # Если что-то пошло не так, оставляем исходный текст
+                        formatted_text += f'<div style="background-color: #BABABA; border: 1px solid #808080; border-radius: 4px; padding: 8px 12px; margin: 4px 0; font-family: Consolas, monospace; color: #000000; display: inline-block; font-weight: 500; line-height: 1.2; margin-left: 8px;">{command_text}</div>'
+                message_text.setText(formatted_text)
+            else:
+                message_text.setText(text)
             
             # Устанавливаем политику размера
             message_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
