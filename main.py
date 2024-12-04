@@ -11,8 +11,8 @@ os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 import datetime
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                            QHBoxLayout, QTextEdit, QPushButton, QScrollArea, 
-                            QFrame, QLabel, QMessageBox, QMenu)
+                            QHBoxLayout, QLabel, QPushButton, QScrollArea, 
+                            QFrame, QMessageBox, QMenu, QSizePolicy, QTextEdit)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QSize, QObject, QEvent, QProcess
 from PyQt6.QtGui import QColor, QPalette, QFont
 from gradio_client import Client
@@ -143,8 +143,8 @@ class MessageBubble(QFrame):
         self.message_queue = message_queue
         
         # Минималистичная цветовая схема
-        self.user_bg = QColor("#f0f0f0")  # Светло-серый
-        self.bot_bg = QColor("#ffffff")   # Белый
+        self.user_bg = QColor("#FBCEB1")
+        self.bot_bg = QColor("#60A5A9")
         self.user_text = QColor("#333333")  # Темно-серый
         self.bot_text = QColor("#2c3e50")   # Темно-синий
         
@@ -174,73 +174,156 @@ class MessageBubble(QFrame):
         layout.addWidget(time_label, alignment=Qt.AlignmentFlag.AlignRight if is_user else Qt.AlignmentFlag.AlignLeft)
         
         # Текстовое поле сообщения
-        message_text = QTextEdit()
-        message_text.setReadOnly(True)
-        message_text.setText(text)
-        message_text.setStyleSheet(f"""
-            QTextEdit {{
-                background-color: transparent;
-                color: {self.user_text.name() if is_user else self.bot_text.name()};
-                border: none;
-                font-size: 12px;
-                padding: 0;
-            }}
-        """)
-        
-        # Автоматическая подстройка высоты
-        message_text.document().documentLayoutChanged.connect(
-            lambda: self._adjust_text_height(message_text)
-        )
+        if "\nКонсольный вывод:\n" in text:
+            message_text = QTextEdit()
+            message_text.setReadOnly(True)
+            
+            # Разделяем обычный текст и консольный вывод
+            parts = text.split("\nКонсольный вывод:\n")
+            normal_text = parts[0]
+            console_text = parts[1]
+            
+            # Форматируем текст с разным стилем для консольного вывода
+            formatted_text = f"{normal_text}\n\n"
+            message_text.setText(formatted_text)
+            
+            # Создаем консольный блок
+            console_block = QTextEdit()
+            console_block.setReadOnly(True)
+            console_block.setText(console_text)
+            console_block.setStyleSheet("""
+                QTextEdit {
+                    background-color: #f0f0f0;
+                    color: #333333;
+                    font-family: 'Consolas', 'Courier New', monospace;
+                    font-size: 10pt;
+                    padding: 10px;
+                    border: 1px solid #cccccc;
+                    border-radius: 5px;
+                }
+            """)
+            
+            # Отключаем полосы прокрутки для основного текста
+            message_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            message_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            
+            # Отключаем полосы прокрутки для консольного блока
+            console_block.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            console_block.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            
+            # Устанавливаем политику размера
+            message_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            console_block.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            
+            # Основной стиль сообщения
+            message_text.setStyleSheet(f"""
+                QTextEdit {{
+                    background-color: transparent;
+                    color: {self.user_text.name() if is_user else self.bot_text.name()};
+                    border: none;
+                    font-size: 12px;
+                    padding: 5px;
+                    margin: 0;
+                }}
+            """)
+            
+            # Создаем layout для сообщения
+            message_layout = QVBoxLayout()
+            message_layout.setSpacing(10)
+            message_layout.addWidget(message_text)
+            message_layout.addWidget(console_block)
+            
+            # Создаем контейнер для сообщения
+            message_container = QWidget()
+            message_container.setLayout(message_layout)
+            
+            # Автоматическая подстройка высоты для обоих виджетов
+            message_text.document().documentLayoutChanged.connect(
+                lambda: self._adjust_text_height(message_text)
+            )
+            console_block.document().documentLayoutChanged.connect(
+                lambda: self._adjust_text_height(console_block)
+            )
+            
+            layout.addWidget(message_container)
+            return
+        else:
+            message_text = QLabel(text)
+            message_text.setWordWrap(True)
+            message_text.setTextFormat(Qt.TextFormat.PlainText)
+            message_text.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            
+            # Устанавливаем политику размера
+            message_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            
+            message_text.setStyleSheet(f"""
+                QLabel {{
+                    background-color: transparent;
+                    color: {self.user_text.name() if is_user else self.bot_text.name()};
+                    font-size: 12px;
+                    padding: 5px;
+                    margin: 0;
+                    min-height: 20px;
+                }}
+            """)
         
         layout.addWidget(message_text)
         
         # Добавление кнопок действий
-        if with_buttons and not is_user and "run_command" in text:
-            between = text.split("run_command('")[1].split("')")[0]
-            command = between
-            button_layout = QHBoxLayout()
-            button_layout.setSpacing(10)
-            
-            launch_btn = QPushButton("Запуск")
-            launch_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #4CAF50;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    padding: 5px 10px;
-                }
-                QPushButton:hover {
-                    background-color: #45a049;
-                }
-            """)
-            launch_btn.clicked.connect(lambda: self.handle_launch(command))
-            button_layout.addWidget(launch_btn)
-            
-            cancel_btn = QPushButton("Отмена")
-            cancel_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #f44336;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    padding: 5px 10px;
-                }
-                QPushButton:hover {
-                    background-color: #d32f2f;
-                }
-            """)
-            cancel_btn.clicked.connect(lambda: self.handle_cancel(text))
-            button_layout.addWidget(cancel_btn)
-            
-            layout.addLayout(button_layout)
+        if "№%;№:?%:;%№*(743__0=" in text:
+            if with_buttons and not is_user and "run_command" in text:
+                between = text.split("run_command('")[1].split("')")[0]
+                command = between
+                button_layout = QHBoxLayout()
+                button_layout.setSpacing(10)
+                
+                launch_btn = QPushButton("Запуск")
+                launch_btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #4CAF50;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        padding: 5px 10px;
+                    }
+                    QPushButton:hover {
+                        background-color: #45a049;
+                    }
+                """)
+                launch_btn.clicked.connect(lambda: self.handle_launch(command))
+                button_layout.addWidget(launch_btn)
+                
+                cancel_btn = QPushButton("Отмена")
+                cancel_btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #f44336;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        padding: 5px 10px;
+                    }
+                    QPushButton:hover {
+                        background-color: #d32f2f;
+                    }
+                """)
+                cancel_btn.clicked.connect(lambda: self.handle_cancel(text))
+                button_layout.addWidget(cancel_btn)
+                
+                layout.addLayout(button_layout)
         
         self.setLayout(layout)
     
     def _adjust_text_height(self, text_edit):
-        # Динамическая подстройка высоты текстового поля
-        doc_height = text_edit.document().size().height()
-        text_edit.setFixedHeight(int(doc_height) + 20)  # Небольшой отступ
+        """Динамическая подстройка высоты текстового поля для консольного вывода"""
+        # Получаем размер документа
+        doc = text_edit.document()
+        doc.setTextWidth(text_edit.width())
+        
+        # Устанавливаем высоту с учетом отступов
+        margins = text_edit.contentsMargins()
+        height = doc.size().height() + margins.top() + margins.bottom()
+        text_edit.setMinimumHeight(int(height))
+        text_edit.setMaximumHeight(int(height))
     
     def handle_launch(self, command):
         # Создаем консольный виджет вывода
@@ -255,7 +338,13 @@ class MessageBubble(QFrame):
         console_output.command_finished.connect(self.send_command_result_to_ai)
     
     def handle_cancel(self, message):
-        print(f"Отмена для сообщения: {message}")
+        # Извлекаем команду из сообщения
+        command = message.split("run_command('")[1].split("')")[0]
+        cancel_message = f"Пользователь отказался выполнять команду: {command}"
+        
+        # Отправляем сообщение в очередь для обработки ИИ
+        if self.message_queue:
+            self.message_queue.put((cancel_message, True, False))
     
     def send_command_result_to_ai(self, result):
         # Обработка консольного вывода с ИИ
@@ -336,6 +425,9 @@ class ChatWindow(QMainWindow):
         # Запуск потока обработки сообщений
         self.processing_thread = threading.Thread(target=self._process_messages, daemon=True)
         self.processing_thread.start()
+
+        # Инициализация тестовых сообщений
+        self.initialize_test_messages()
     
     def eventFilter(self, obj, event):
         # Обработка нажатия Enter в поле ввода
@@ -497,6 +589,25 @@ class ChatWindow(QMainWindow):
         # Обработка результата команды
         print(f"Результат команды: {result}")
         self.message_processed.emit(result, False, True)
+
+    def initialize_test_messages(self):
+        """Инициализация тестовых сообщений в чате"""
+        test_messages = [
+            ("""Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.""", True),
+            
+            ("""Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.""", False),
+            
+            ("""At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga.""", True),
+            
+            ("""Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae.""", False),
+            
+            ("""Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus.""", True),
+            
+            ("""Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.\n\nКонсольный вывод:\n$ python --version\nPython 3.9.0\n\n$ pip list\nPackage      Version\n------------ -------\npyqt6        6.4.0\nrequests     2.26.0\npython-dotenv 0.19.0\nnumpy        1.21.2\npandas       1.3.3\nscipy        1.7.1\n\n$ python\n>>> import numpy as np\n>>> arr = np.array([1, 2, 3, 4, 5])\n>>> print(f"Mean: {arr.mean()}, Sum: {arr.sum()}")\nMean: 3.0, Sum: 15\n""", False)
+        ]
+
+        for text, is_user in test_messages:
+            self.message_processed.emit(text, is_user, False)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
