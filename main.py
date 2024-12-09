@@ -15,8 +15,8 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QFrame, QMessageBox, QMenu, QSizePolicy, QTextEdit)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QSize, QObject, QEvent, QProcess
 from PyQt6.QtGui import QColor, QPalette, QFont
-from nn import AIClient, sys_prompt
-from signal_methods import *
+from gradio_client import Client
+from nn import sys_prompt  # Импортируем системный промпт
 
 # Подавление предупреждений Gradio
 logging.getLogger('gradio_client').setLevel(logging.ERROR)
@@ -380,7 +380,7 @@ class ChatWindow(QMainWindow):
         self.setWindowTitle("LlamaDevAssist")
         
         # Инициализируем AI клиент
-        self.ai_client = AIClient()
+        self.ai_client = None
         
         # Очередь сообщений
         self.message_queue = queue.Queue()
@@ -436,6 +436,9 @@ class ChatWindow(QMainWindow):
 
         # Инициализация тестовых сообщений
         self.initialize_test_messages()
+        
+        # Инициализация AI клиента
+        self.init_ai_client()
     
     def eventFilter(self, obj, event):
         # Обработка нажатия Enter в поле ввода
@@ -531,7 +534,7 @@ class ChatWindow(QMainWindow):
                 
                 try:
                     # Получение ответа от AI
-                    result = self.ai_client.get_response(message)
+                    result = self.get_ai_response(message)
                     
                     # Вывод в консоль
                     print(f"Запрос: {message}")
@@ -609,6 +612,95 @@ class ChatWindow(QMainWindow):
 
         for text, is_user in test_messages:
             self.message_processed.emit(text, is_user, False)
+
+    def init_ai_client(self):
+        self.ai_client = create_llama_client(
+            model_url="DHEIVER/chat-Llama-3.3-70B", 
+            # Системный промпт будет использоваться по умолчанию из nn.py
+        )
+
+    def get_ai_response(self, message):
+        if not self.ai_client:
+            return "Клиент не инициализирован"
+        
+        try:
+            result = generate_response(
+                self.ai_client, 
+                message, 
+                max_tokens=2048, 
+                temperature=0.7, 
+                top_p=0.95, 
+                language="en"
+            )
+            # Извлекаем текст ответа из кортежа
+            if isinstance(result, tuple):
+                result = result[0][1]['content'] if result[0] else "Пустой ответ"
+            return result
+        except Exception as e:
+            return f"Ошибка генерации ответа: {e}"
+
+def create_llama_client(
+    model_url="DHEIVER/chat-Llama-3.3-70B", 
+    system_message=sys_prompt  # Используем системный промпт по умолчанию
+):
+    """
+    Создает клиент для взаимодействия с LLM через Gradio
+    
+    :param model_url: URL модели в Hugging Face Spaces
+    :param system_message: Системное сообщение для настройки поведения модели
+    :return: Клиент Gradio
+    """
+    try:
+        client = Client(model_url)
+        return {
+            'client': client,
+            'system_message': system_message
+        }
+    except Exception as e:
+        print(f"Ошибка создания клиента: {e}")
+        return None
+
+def generate_response(
+    client_config, 
+    message, 
+    chat_history=None, 
+    max_tokens=2048, 
+    temperature=0.7, 
+    top_p=0.95, 
+    language="en"
+):
+    """
+    Генерирует ответ от LLM
+    
+    :param client_config: Конфигурация клиента от create_llama_client
+    :param message: Текущее сообщение пользователя
+    :param chat_history: История чата
+    :param max_tokens: Максимальная длина ответа
+    :param temperature: Креативность ответа
+    :param top_p: Параметр top-p сэмплирования
+    :param language: Язык ответа
+    :return: Сгенерированный ответ
+    """
+    if not client_config:
+        return "Клиент не инициализирован"
+    
+    try:
+        result = client_config['client'].predict(
+            message=message,
+            chat_history=chat_history or [],
+            system_message=client_config['system_message'],
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            language=language,
+            api_name="/respond"
+        )
+        # Извлекаем текст ответа из кортежа
+        if isinstance(result, tuple):
+            result = result[0][1]['content'] if result[0] else "Пустой ответ"
+        return result
+    except Exception as e:
+        return f"Ошибка генерации ответа: {e}"
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
