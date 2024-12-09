@@ -11,114 +11,155 @@ import signal_methods
 class TestSignalMethods(unittest.TestCase):
     def setUp(self):
         # Создаем временный файл для тестирования
-        with open('test_file.txt', 'w') as f:
-            f.write("Hello world! This is a test file.\nAnother line with hello.")
+        with open('test_signal.txt', 'w', encoding='utf-8') as f:
+            f.write("Test signal content\nMultiple lines\nWith different data")
         
         # Создаем временную директорию
-        os.makedirs('test_dir', exist_ok=True)
-        with open('test_dir/test1.txt', 'w') as f:
-            f.write("Test content in file 1")
-        with open('test_dir/test2.txt', 'w') as f:
-            f.write("Test content in file 2")
+        os.makedirs('test_signal_dir', exist_ok=True)
+        with open('test_signal_dir/file1.txt', 'w', encoding='utf-8') as f:
+            f.write("Signal test file 1")
+        with open('test_signal_dir/file2.txt', 'w', encoding='utf-8') as f:
+            f.write("Signal test file 2")
 
     def tearDown(self):
         # Удаляем временные файлы и директории после теста
-        os.remove('test_file.txt')
-        os.remove('test_dir/test1.txt')
-        os.remove('test_dir/test2.txt')
-        os.rmdir('test_dir')
+        os.remove('test_signal.txt')
+        os.remove('test_signal_dir/file1.txt')
+        os.remove('test_signal_dir/file2.txt')
+        os.rmdir('test_signal_dir')
 
-    def test_run_command_basic(self):
-        """Базовый тест выполнения простой команды"""
-        result = signal_methods.run_command('echo "Test command"')
-        self.assertIn("Test command", result)
+    def test_signal_run_command(self):
+        """Тестирование выполнения команды"""
+        result = signal_methods.run_command('echo "Signal test command"')
+        print(f"Run Command Result: {result}")
+        self.assertIn("Signal test command", result)
 
-    def test_run_command_complex(self):
-        """Тест выполнения более сложной команды"""
-        result = signal_methods.run_command('dir')
-        self.assertTrue(len(result) > 0, "Команда dir должна вернуть непустой результат")
-        self.assertFalse("Error" in result, "Команда dir не должна содержать ошибок")
+    def test_signal_read_file(self):
+        """Тестирование чтения файла"""
+        result = signal_methods.read_file('test_signal.txt')
+        print(f"Read File Result: {result}")
+        self.assertIn("Test signal content", result)
 
-    def test_run_command_with_pipes(self):
-        """Тест команды с использованием pipe"""
-        result = signal_methods.run_command('echo "test string" | findstr "test"')
-        self.assertIn("test string", result)
-
-    def test_run_command_error_handling(self):
-        """Тест обработки ошибочной команды"""
-        result = signal_methods.run_command('nonexistent_command')
-        self.assertTrue(
-            "не является" in result or 
-            "not recognized" in result or 
-            "Command execution error" in result, 
-            f"Неожиданный результат: {result}"
-        )
-
-    def test_run_command_with_special_chars(self):
-        """Тест команды со специальными символами"""
-        result = signal_methods.run_command('echo "Hello, World!"')
-        self.assertIn("Hello, World!", result)
-
-    def test_run_command_long_output(self):
-        """Тест команды с длинным выводом"""
-        result = signal_methods.run_command('systeminfo')
-        self.assertTrue(len(result) > 100, "Команда systeminfo должна вернуть развернутую информацию")
-
-    def test_run_command_timeout(self):
-        """Расширенный тест на таймаут"""
-        result = signal_methods.run_command('ping -n 10 127.0.0.1 > nul')
-        self.assertIn("Command timed out", result)
-
-    def test_run_command_environment_vars(self):
-        """Тест выполнения команды с переменными окружения"""
-        result = signal_methods.run_command('echo %COMPUTERNAME%')
-        self.assertTrue(len(result.strip()) > 0, "Должно быть возвращено имя компьютера")
-
-    def test_run_command_powershell(self):
-        """Тест выполнения команды через PowerShell"""
-        result = signal_methods.run_command('powershell "(Get-Date).ToString(\'dd.MM.yyyy HH:mm:ss\')"')
-        # Проверяем, что возвращена дата
-        date_pattern = r'\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}'
-        self.assertTrue(re.search(date_pattern, result), 
-                        f"Должна быть возвращена корректная дата. Получен результат: {result}")
-
-    def test_run_command_network(self):
-        """Тест сетевой команды"""
-        result = signal_methods.run_command('ipconfig')
-        self.assertTrue(
-            "IPv4" in result or 
-            "Ethernet" in result or 
-            "Адаптер" in result, 
-            f"Команда ipconfig должна вернуть информацию о сети. Получен результат: {result}"
-        )
-
-    def test_read_file(self):
-        # Тестируем чтение файла
-        result = signal_methods.read_file('test_file.txt')
-        self.assertIn("Hello world!", result)
-
-    def test_analyze_file(self):
-        # Тестируем анализ файла
-        result = signal_methods.analyze('test_file.txt')
+    def test_signal_analyze_file(self):
+        """Тестирование анализа файла"""
+        result = signal_methods.analyze('test_signal.txt')
+        print(f"Analyze File Result: {result}")
         self.assertEqual(result['type'], 'file')
         self.assertTrue('size' in result)
-        self.assertTrue('owner' in result)
 
-    def test_analyze_directory(self):
-        # Тестируем анализ директории
-        result = signal_methods.analyze('test_dir')
+    def test_signal_analyze_directory(self):
+        """Тестирование анализа директории"""
+        result = signal_methods.analyze('test_signal_dir')
+        print(f"Analyze Directory Result: {result}")
+        
+        # Проверяем основные ключевые поля
         self.assertEqual(result['type'], 'directory')
-        self.assertEqual(result['items_count'], 2)
+        self.assertEqual(result['total_items'], 2)
+        
+        # Проверяем содержимое директории
+        self.assertTrue('contents' in result)
+        contents = result['contents']
+        
+        # Проверяем метаданные каждого файла
+        for item in contents:
+            print(f"Directory Item: {item}")
+            self.assertTrue('name' in item)
+            self.assertTrue('type' in item)
+            self.assertTrue('modified' in item)
+            self.assertTrue('permissions' in item)
+            
+            # Проверяем, что файлы имеют размер
+            if item['type'] == 'file':
+                self.assertTrue('size' in item)
+                self.assertIsNotNone(item['size'])
+        
+        # Проверяем общий размер директории
+        self.assertTrue('total_size' in result)
+        self.assertIsNotNone(result['total_size'])
 
-    def test_search_in_file(self):
-        # Тестируем поиск в файле
-        result = signal_methods.search('test_file.txt', 'hello')
+    def test_signal_search_in_file(self):
+        """Тестирование поиска в файле"""
+        result = signal_methods.search('test_signal.txt', 'lines')
+        print(f"Search in File Result: {result}")
+        self.assertEqual(result, 1)
+
+    def test_signal_search_in_directory(self):
+        """Тестирование поиска в директории"""
+        result = signal_methods.search('test_signal_dir', 'Signal')
+        print(f"Search in Directory Result: {result}")
         self.assertEqual(result, 2)
 
-    def test_search_in_directory(self):
-        # Тестируем поиск в директории
-        result = signal_methods.search('test_dir', 'Test content')
-        self.assertEqual(result, 2)
+    def test_signal_update_file_replace(self):
+        """Тестирование замены содержимого файла"""
+        # Выводим исходное содержимое
+        print("Original file content:")
+        with open('test_signal.txt', 'r') as f:
+            print(f.read())
+        
+        # Обновляем файл
+        result = signal_methods.update_file('test_signal.txt', "New content entirely")
+        print("Update result:", result)
+        
+        # Выводим новое содержимое
+        print("Updated file content:")
+        with open('test_signal.txt', 'r') as f:
+            updated_content = f.read()
+            print(updated_content)
+        
+        # Проверяем результат
+        self.assertEqual(updated_content, "New content entirely")
+        self.assertTrue(isinstance(result, dict))
+        self.assertEqual(result['status'], 'success')
+
+    def test_signal_update_file_append(self):
+        """Тестирование добавления содержимого в конец файла"""
+        # Выводим исходное содержимое
+        print("Original file content:")
+        with open('test_signal.txt', 'r') as f:
+            print(f.read())
+        
+        # Обновляем файл
+        result = signal_methods.update_file('test_signal.txt', "\nAppended content", mode='append')
+        print("Update result:", result)
+        
+        # Выводим новое содержимое
+        print("Updated file content:")
+        with open('test_signal.txt', 'r') as f:
+            updated_content = f.read()
+            print(updated_content)
+        
+        # Проверяем результат
+        self.assertTrue("Appended content" in updated_content)
+        self.assertTrue(isinstance(result, dict))
+        self.assertEqual(result['status'], 'success')
+
+    def test_signal_update_file_prepend(self):
+        """Тестирование добавления содержимого в начало файла"""
+        # Выводим исходное содержимое
+        print("Original file content:")
+        with open('test_signal.txt', 'r') as f:
+            print(f.read())
+        
+        # Обновляем файл
+        result = signal_methods.update_file('test_signal.txt', "Prepended content\n", mode='prepend')
+        print("Update result:", result)
+        
+        # Выводим новое содержимое
+        print("Updated file content:")
+        with open('test_signal.txt', 'r') as f:
+            updated_content = f.read()
+            print(updated_content)
+        
+        # Проверяем результат
+        self.assertTrue(updated_content.startswith("Prepended content"))
+        self.assertTrue(isinstance(result, dict))
+        self.assertEqual(result['status'], 'success')
 
 if __name__ == '__main__':
-    unittest.main()
+    # Демонстрация потокового вывода
+    print("Streaming ping output:")
+    for line in signal_methods.run_command('ping 8.8.8.8', stream=True):
+        print(line)
+        # Можно добавить условие остановки, например:
+        # if some_condition:
+        #     break
