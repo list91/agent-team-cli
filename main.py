@@ -17,6 +17,7 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QSize, QObject, QEvent, QProces
 from PyQt6.QtGui import QColor, QPalette, QFont
 from gradio_client import Client
 from nn import sys_prompt  # Импортируем системный промпт
+from signal_methods import *
 
 # Подавление предупреждений Gradio
 logging.getLogger('gradio_client').setLevel(logging.ERROR)
@@ -266,6 +267,14 @@ class MessageBubble(QFrame):
                             try:
                                 command_text = part.split("run_command('")[1].split("')")[0]
                             except IndexError:
+                                pass
+                        elif "analyze('" in part and "')" in part:
+                            try:
+                                command_text = part.split("analyze('")[1].split("')")[0]
+                                print("@"*10)
+                                print(analyze(command_text))
+
+                            except IndexError:
                                 pass  # Если что-то пошло не так, оставляем исходный текст
                         formatted_text += f'<div style="background-color: #BABABA; border: 1px solid #808080; border-radius: 4px; padding: 8px 12px; margin: 4px 0; font-family: Consolas, monospace; color: #000000; display: inline-block; font-weight: 500; line-height: 1.2; margin-left: 8px;">{command_text}</div>'
                 message_text.setText(formatted_text)
@@ -290,6 +299,14 @@ class MessageBubble(QFrame):
         
         # Добавление кнопок действий
         if "№%;№:?%:;%№*(743__0=" in text:
+            if "analyze('" in text and "')" in text:
+                try:
+                    command_text = text.split("analyze('")[1].split("')")[0]
+                    print("@"*10)
+                    print(analyze(command_text))
+
+                except IndexError:
+                    pass
             if with_buttons and not is_user and "run_command" in text:
                 between = text.split("run_command('")[1].split("')")[0]
                 command = between
@@ -329,7 +346,7 @@ class MessageBubble(QFrame):
                 button_layout.addWidget(cancel_btn)
                 
                 layout.addLayout(button_layout)
-        
+            
         self.setLayout(layout)
     
     def _adjust_text_height(self, text_edit):
@@ -439,6 +456,9 @@ class ChatWindow(QMainWindow):
         
         # Инициализация AI клиента
         self.init_ai_client()
+        
+        # Добавляем список для хранения истории чата
+        self.chat_history = []
     
     def eventFilter(self, obj, event):
         # Обработка нажатия Enter в поле ввода
@@ -539,6 +559,16 @@ class ChatWindow(QMainWindow):
                     # Вывод в консоль
                     print(f"Запрос: {message}")
                     print(f"Ответ: {result}")
+
+                    if "№%;№:?%:;%№*(743__0=" in result:
+                        if "analyze(" in result:
+                            try:
+                                command_text = result.split("analyze(")[1].split(")")[0]
+                                print("@"*10)
+                                print(analyze(command_text))
+
+                            except IndexError:
+                                pass
                     
                     # Скрываем спиннер и отправляем сообщение
                     QTimer.singleShot(0, self.hide_spinner)
@@ -624,17 +654,31 @@ class ChatWindow(QMainWindow):
             return "Клиент не инициализирован"
         
         try:
+            # Передаем историю чата в generate_response
             result = generate_response(
                 self.ai_client, 
                 message, 
+                chat_history=self.chat_history,  # Передаем текущую историю чата
                 max_tokens=2048, 
                 temperature=0.7, 
                 top_p=0.95, 
                 language="en"
             )
+            
             # Извлекаем текст ответа из кортежа
             if isinstance(result, tuple):
                 result = result[0][1]['content'] if result[0] else "Пустой ответ"
+            
+            # Обновляем историю чата
+            self.chat_history.extend([
+                {'role': 'user', 'content': message},
+                {'role': 'assistant', 'content': result}
+            ])
+            
+            # Ограничиваем размер истории чата (например, последними 10 сообщениями)
+            if len(self.chat_history) > 20:
+                self.chat_history = self.chat_history[-20:]
+            
             return result
         except Exception as e:
             return f"Ошибка генерации ответа: {e}"
@@ -685,9 +729,15 @@ def generate_response(
         return "Клиент не инициализирован"
     
     try:
+        # Преобразуем историю чата в формат, совместимый с Gradio
+        formatted_history = []
+        if chat_history:
+            for entry in chat_history:
+                formatted_history.append(entry)
+        
         result = client_config['client'].predict(
             message=message,
-            chat_history=chat_history or [],
+            chat_history=formatted_history,
             system_message=client_config['system_message'],
             max_tokens=max_tokens,
             temperature=temperature,
@@ -695,12 +745,58 @@ def generate_response(
             language=language,
             api_name="/respond"
         )
+        
         # Извлекаем текст ответа из кортежа
         if isinstance(result, tuple):
             result = result[0][1]['content'] if result[0] else "Пустой ответ"
         return result
     except Exception as e:
         return f"Ошибка генерации ответа: {e}"
+
+def print_analyze_result(result):
+    """
+    Красиво выводит результат анализа файла или директории в консоль
+    
+    :param result: Результат функции analyze()
+    """
+    if isinstance(result, str):
+        print(f"❌ Ошибка: {result}")
+        return
+    
+    # Стили для вывода
+    BOLD = "\033[1m"
+    RESET = "\033[0m"
+    GREEN = "\033[32m"
+    BLUE = "\033[34m"
+    
+    print(f"\n{BOLD}🔍 Результат анализа:{RESET}")
+    print(f"{GREEN}Тип:{RESET} {result.get('type', 'Неизвестно')}")
+    
+    if result.get('type') == 'file':
+        print(f"{GREEN}Размер:{RESET} {result.get('size', 0)} байт")
+        print(f"{GREEN}Владелец:{RESET} {result.get('owner', 'Неизвестно')}")
+        print(f"{GREEN}Права доступа:{RESET} {result.get('permissions', 'Неизвестно')}")
+        print(f"{GREEN}Последнее изменение:{RESET} {result.get('modified', 'Неизвестно')}")
+    
+    elif result.get('type') == 'directory':
+        print(f"{GREEN}Всего элементов:{RESET} {result.get('total_items', 0)}")
+        print(f"{GREEN}Общий размер:{RESET} {result.get('total_size', 0)} байт")
+        print(f"{GREEN}Владелец:{RESET} {result.get('owner', 'Неизвестно')}")
+        print(f"{GREEN}Права доступа:{RESET} {result.get('permissions', 'Неизвестно')}")
+        print(f"{GREEN}Последнее изменение:{RESET} {result.get('modified', 'Неизвестно')}")
+        
+        print(f"\n{BOLD}Содержимое директории:{RESET}")
+        for item in result.get('contents', []):
+            item_type = "📁" if item.get('type') == 'directory' else "📄"
+            print(f"{item_type} {BLUE}{item.get('name', 'Неизвестно')}{RESET}")
+            if item.get('size') is not None:
+                print(f"   Размер: {item.get('size', 0)} байт")
+            print(f"   Права: {item.get('permissions', 'Неизвестно')}")
+            print(f"   Изменен: {item.get('modified', 'Неизвестно')}")
+            print()
+
+# Пример использования
+# print_analyze_result(analyze('/path/to/file_or_directory'))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
