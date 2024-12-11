@@ -2,7 +2,7 @@ import asyncio
 import sys
 import time
 import threading
-
+import re
 class ChatBot:
     def __init__(self):
         self.history = []
@@ -16,21 +16,30 @@ class ChatBot:
         if len(self.history) > 10:
             self.history.pop(0)
 
-    import re
+    
 
     async def send_request(self, prompt):
         # Simulate an asynchronous request to an AI model
         await asyncio.sleep(2)  # Simulating network delay
-        response = f'Bot: Here is the response to your prompt. Here is a special signal: №%;№:?%:;%№*(743__0=Some important content here and another signal: №%;№:?%:;%№*(743__0='  # Simulated response with signal
+        response = f'Bot: Here is the response to your prompt. Here is a special signal: №%;№:?%:;%№743__0=Some important content here and another signal: №%;№:?%:;%№743__0='  # Simulated response with signal
 
+        special_sym = '№%;№:?%:;%№743__0='
+
+        response = response.replace(special_sym, ' __SIGNAL__ ')
+        # if special_sym in response:
+        #     finded_text = response[response.index(special_sym):]
+        #     response = response.replace(special_sym, ' __SIGNAL__ ')
+
+        # print(finded_text)
         # Use regex to find content between special symbols
-        pattern = r'№%;№:?%:;%№\*\(743__0=(.*?)№%;№:?%:;%№\*\(743__0='
-        matches = re.findall(pattern, response)
+        # pattern = r'№%;№:?%:;%№743__0=(.*?)№%;№:?%:;%№743__0='
 
-        if matches:
-            main_response = response.split('№%;№:?%:;%№*(743__0=')[0].strip()
-            extracted_content = matches[0].strip()  # Get the first match
-            return main_response + f'\n[Signal Content]: {extracted_content}'  # Return formatted response
+        # matches = re.findall(pattern, response)
+
+        # if matches:
+        #     main_response = response.split('№%;№:?%:;%№\(743__0=')[0].strip()
+        #     extracted_content = matches[0].strip()  # Get the first match
+        #     return main_response + f'\n[Signal Content]: {extracted_content}'  # Return formatted response
 
         return response
 
@@ -43,7 +52,7 @@ class ChatBot:
                 time.sleep(0.1)
 
     def run_chat(self):
-        print("Welcome to the chat!")
+        # print("Welcome to the chat!")
         while True:
             user_input = input('You: ')
             self.add_user_message(user_input)
