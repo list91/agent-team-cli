@@ -72,7 +72,7 @@ class ChatBot:
 
     async def send_request(self, prompt):
         try:
-            result = await generate_response(prompt, [])
+            result = await generate_response(prompt, self.history['history'])
             self.spinner_thread.join()
             self.add_bot_message(result.replace(' {__SIGNAL__} ', self.special_sym))
             print(f'\n{result.replace(' {__SIGNAL__} ', self.special_sym)}')
@@ -162,8 +162,8 @@ class ChatBot:
                 if res is not None:
                     res = str(res)
                     print(res)
-                    prompt = self.get_history_prompt()
-                    await self.send_request(prompt + '\n' +"Результат выполнения сигнала:"+ res)
+                    # prompt = self.get_history_prompt()
+                    await self.send_request({"role": "user", "content": "Результат выполнения сигнала:"+ res})
         except Exception as e:
             q = 1
             print(f"Ошибка генерации ответа: {e}")
@@ -191,7 +191,7 @@ class ChatBot:
             # Создаем подсказку из истории
             prompt = self.get_history_prompt()
 
-            await self.send_request(prompt + '\n' + user_input)
+            await self.send_request({"role": "user", "content": user_input})
             
             # Ждем завершения спиннера
             
