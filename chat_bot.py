@@ -6,13 +6,16 @@ import json
 import os
 from nn import generate_response
 from signals import *
+from config import *
 
 class ChatBot:
     
     def __init__(self):
         self.special_sym = '№%;№:?%:;%№(743__0='
         self.filename = "context.json"
-        self.default_content = {"history": []}
+        # res = run_command("pwd")
+        # self.append_to_history()
+        
         self.init_local_context_history()
 
     def add_user_message(self, message):
@@ -34,6 +37,7 @@ class ChatBot:
 
     def init_local_context_history(self):
         if not os.path.exists(self.filename):
+            self.default_content = {"history": [{"role": "system", "content": system_prompt_ru + "\nТекущий каталог:" + str(run_command("cd"))}]}
             with open(self.filename, 'w', encoding='utf-8') as f:
                 json.dump(self.default_content, f, ensure_ascii=False)
             self.history = self.default_content
@@ -68,7 +72,7 @@ class ChatBot:
         for i in signal_params:
             q.append(i.replace('"', '').replace("'", ""))
         # signal_params = self.get_signal_params(signal)
-        return q        
+        return ''.join(q)
 
     async def send_request(self, prompt):
         try:
@@ -84,9 +88,10 @@ class ChatBot:
                         user_input = input('\nВыбери 1 или 0: ')
                         if user_input == '1':
                             signal_params = self.get_signal_params(signal)
+                            print(signal_params)
                             res = run_command(signal_params)
                             print(res)
-                            self.add_user_message("Результат выполнения run_command:", res)
+                            self.add_user_message("Результат выполнения run_command:" + str(res))
                         else:
                             print('Сигнал отменен.')
                     except Exception as e:
@@ -99,7 +104,7 @@ class ChatBot:
                             signal_params = self.get_signal_params(signal)
                             res = search(signal_params.split(', ')[0], signal_params.split(', ')[1])
                             print(res)
-                            self.add_user_message("Результат выполнения search:", res)
+                            self.add_user_message("Результат выполнения search:" + str(res))
                         else:
                             print('Сигнал отменен.')
                     except Exception as e:
@@ -112,7 +117,7 @@ class ChatBot:
                             signal_params = self.get_signal_params(signal)
                             res = analyze(signal_params)
                             print(res)
-                            self.add_user_message("Результат выполнения analyze:", res)
+                            self.add_user_message("Результат выполнения analyze:" + str(res))
                         else:
                             print('Сигнал отменен.')
                     except Exception as e:
@@ -125,7 +130,7 @@ class ChatBot:
                             signal_params = self.get_signal_params(signal)
                             res = create_file(signal_params.split(', ')[0], signal_params.split(', ')[1])
                             print(res)
-                            self.add_user_message("Результат выполнения create_file:", res)
+                            self.add_user_message("Результат выполнения create_file:" + str(res))
                         else:
                             print('Сигнал отменен.')
                     except Exception as e:
@@ -140,7 +145,7 @@ class ChatBot:
                             print(q)
                             res = update_file(signal_params.split(', ')[0], signal_params.split(', ')[1])
                             print(res)
-                            self.add_user_message("Результат выполнения update_file:", res)
+                            self.add_user_message("Результат выполнения update_file:" + str(res))
                         else:
                             print('Сигнал отменен.')
                     except Exception as e:
@@ -153,7 +158,7 @@ class ChatBot:
                             signal_params = self.get_signal_params(signal)
                             res = read_file(signal_params)
                             print(res)
-                            self.add_user_message("Результат выполнения read_file:", res)
+                            self.add_user_message("Результат выполнения read_file:" + str(res))
                         else:
                             print('Сигнал отменен.')
                     except Exception as e:
@@ -200,3 +205,6 @@ class ChatBot:
 if __name__ == "__main__":
     chatbot = ChatBot()
     asyncio.run(chatbot.run_chat())
+
+
+# из файла qq.txt убери цифры

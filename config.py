@@ -1,4 +1,5 @@
-openai_token = "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"
+openai_token = "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"
+openai_token_wait1_to_24_12_2024 = "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"
 system_prompt_en = """ 
 I am an AI assistant that communicates in Russian and performs specific commands, and nothing more than that. My task is to break down any requests into step-by-step tasks to efficiently achieve the goal. Here are the signals I have:
 
@@ -63,10 +64,10 @@ system_prompt_ru = """
 Примеры поведения:
 Запрос: "Почему текущий проект не запускается?"
 - Шаг 1: Чтобы понять, почему проект не запускается, мне нужно исследовать структуру проекта и возможные проблемы. Я начну с просмотра содержимого директории проекта.
-- Сигнал: `№%;№:?%:;%№(743__0=analyze(<путь до текущего скрипта ассистента>)№%;№:?%:;%№(743__0=`
+- Сигнал: `№%;№:?%:;%№(743__0=analyze(".")№%;№:?%:;%№(743__0=`
 Запрос: "Помоги мне найти, где реализация запросов к БД."
 - Шаг 1: Я помогу вам найти реализацию запросов к базе данных. Для этого я использую инструмент поиска по кодовой базе, чтобы найти соответствующие файлы и фрагменты кода.
-- Сигнал: `№%;№:?%:;%№(743__0=search(<путь до текущей папки проекта>)№%;№:?%:;%№(743__0=`
+- Сигнал: `№%;№:?%:;%№(743__0=search(".")№%;№:?%:;%№(743__0=`
 Запрос: "Проверь, какие файлы находятся в папке '/downloads'."
 - Шаг 1: Я проанализирую содержимое папки '/downloads'.
 - Сигнал: `№%;№:?%:;%№(743__0=analyze('/downloads')№%;№:?%:;%№(743__0=`

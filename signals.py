@@ -4,6 +4,7 @@ import time
 import re
 import json
 
+
 # рун_коммнад - внутри доп оболочки выполняет команду, как только кончит так его вывод добавляем в конекст...отдаем ИИ и ждем ответа
 # анализ - логика которая принимает путь и возвращает метаданные файла или директории (размер, владелец и т. д.), вывод добавляем в конекст...отдаем ИИ и ждем ответа
 # чтение_файла - принимает путь к файлу и возвращает содержимое, вывод добавляем в конекст...отдаем ИИ и ждем ответа
@@ -16,15 +17,21 @@ def run_command(command):
         res = ""
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while True:
-            output = process.stdout.readline().decode('cp866')
-            if output == '' and process.poll() is not None:
+            output = process.stdout.readline()
+            if output == b'' and process.poll() is not None:
                 break
             if output:
-                res += output.strip() + '\n'
-                print(output.strip())
+                res += output.decode('cp866').strip() + '\n'  # Декодируем строку в cp866
+                print(res.strip())
+
         rc = process.poll()
         if rc != 0:
-            print(f'Error: {process.stderr.read().decode("utf-8")}')
+            error_output = process.stderr.read()
+            try:
+                print(f'Error: {error_output.decode("cp866")}')
+            except UnicodeDecodeError:
+                print(f'Error: {error_output.decode("utf-8", errors="replace")}')
+                
         return res
     except Exception as e:
         return f'Error: {e}'
@@ -95,18 +102,26 @@ def search(path, pattern):
 
 def create_file(path, content):
     try:
-        if not os.path.exists(os.path.dirname(path)):
-            os.makedirs(os.path.dirname(path))
-        with open(path, 'w') as f:
+        print(f'Attempting to create file at: {path}')
+        
+        if not path:
+            return 'Error: Path is empty.'
+        
+        dir_name = os.path.dirname(path)
+        
+        if dir_name and not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+
+        with open(path, 'w', encoding='utf-8') as f:  # Убедитесь, что используете кодировку
             f.write(content)
+
         return 'Success'
     except Exception as e:
         return f'Error: {e}'
 
-import os
-
 def update_file(path, content):
     try:
+        content = content.replace('\\n', '\n')
         full_path = os.path.abspath(path)  # Получаем полный путь к файлу
         if not os.path.exists(os.path.dirname(full_path)):
             os.makedirs(os.path.dirname(full_path))
@@ -118,16 +133,20 @@ def update_file(path, content):
     except Exception as e:
         return f'Error: {e}'
 
+# print(create_file('qq1.txt', 'привет'))
+
 # print(update_file("qq.txt", "выфв"))
 # print(update_file('qq.txt', 'ee\ndfsdf\ngd\fg\n\nh\nfgh\ngdf\nh\n\n\ngfh\nfg\nh\ngfhgfh\n\nfghh\n\n\nsees\nfgr\nfv\nr\n\nrf\nfdgdfg\n\nfdgdfg\ng'))
 
+# print(update_file('C:\\Users\\s_anu\\projects\\LlamaDevAssist\\qq.txt', '''see\\n\\ndfsdf\\ngd\\nfg\\n\\n\\nh\\nfgh\\ngdf\\nh\\n\\n\\n\\ngfh\\nfg\\nh\\ngfhgfh\\n\\nfghh\\n\\n\\nsees\\nfgr\\nfv\\nr\\n\\nrf\\nfdgdfg\\n\\nfdgdfg\\ng'''))
 
 # Replace with the directory containing .gitignore
 # print(search(r"C:\Users\s_anu\Downloads\RPA\proxy-pilot\venv", "see"))
 
 # print(read_file(r"C:\Users\s_anu\Downloads\RPA\proxy-pilot\venv\.gitignore"))
-# print(analyze(r"C:\Users\s_anu\Downloads\RPA\proxy-pilot\venv\.gitignore"))
+# print(analyze("."))
+# print(analyze("C:/Users/s_anu/projects/LlamaDevAssist"))
 # q = run_command("dir")
 # print(q)
-# q = run_command("ping 8.8.8.8")
-# print(q)
+# q = run_command("cd")
+# print("qqq",q, "qqq")
