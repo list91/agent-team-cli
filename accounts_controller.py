@@ -15,6 +15,15 @@ class AccountsController():
             if acc["is_active"]:
                 return acc["token"]
         return None
+
+    def check_accounts(self):
+        # тут проходимся и проверяем локет а потом активность если неактив то чекаем время, если время меньше чем щас то ставим его активным
+        # data = self.get_data()
+        # for acc in data:
+        #     if acc["is_active"]:
+        #         return acc["token"]
+        # return None
+        pass
     
     def update_account(self, token, recovery_time, is_active, is_locked):
         data = self.get_data()

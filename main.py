@@ -21,7 +21,8 @@
 выполнить действие - отредактировать файл проекта, собрать его и по рещультатам снова редачим либо готово
 """
 from chat_bot import ChatBot
+import asyncio
 
-if __name__ == '__main__':
-    chat_bot = ChatBot()
-    chat_bot.run_chat()
+if __name__ == "__main__":
+    chatbot = ChatBot()
+    asyncio.run(chatbot.run_chat())
