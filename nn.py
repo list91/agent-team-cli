@@ -1,101 +1,72 @@
+# -*- coding: utf-8 -*-
+
 from gradio_client import Client
 from config import *
 import asyncio
+import re
+import asyncio
 from openai import OpenAI
+import re
+import asyncio
+from datetime import datetime, timedelta
 
+class NN():
+    def __init__(self, key):
+        self.set_token(key)
+        self.system_prompt = system_prompt_ru
+        self.accoutn_log_clear()
+    
+    def set_token(self, key):
+        self.current_token = key
+        self.client = OpenAI(api_key=self.current_token)
 
-# client = Client("DHEIVER/chat-Llama-3.3-70B")
+    def accoutn_log_clear(self):
+        self.accoutn_log = {"rate_limit": False, "future_timestamp": 0}
 
-async def generate_response_old(message, history):
-    try:
-        result = client.predict(
-            message=message,
-            chat_history=history,
-            system_message=system_prompt_ru,
-            max_tokens=2048,
-            temperature=0.7,
-            top_p=0.95,
-            language="en",
-            api_name="/respond"
-        )
+    async def generate_response(self, message, history):
+        try:
+            completion = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "system", "content": self.system_prompt}] + history + [message],
+                store=True,
+            )
+            result = completion.choices[0].message.content
+            return result
+        except Exception as e:
+            print(self.handle_error(e))
+            return e
         
-        if isinstance(result, tuple):
-            result = result[0][1]['content'] if result[0] else "Пустой ответ"
-        
-        return result
-    except Exception as e:
-        return f"Ошибка генерации ответа: {e}"
+    def handle_error(self, error):
+        if "Rate limit reached" in str(error):
+            time_remaining = self.extract_time_remaining(str(error))
+            return f"Ошибка генерации ответа: {str(error)}. Ожидание: {time_remaining}"
+        return f"Ошибка генерации ответа: {str(error)}"
 
-client = OpenAI(api_key=openai_token)
+    def extract_time_remaining(self, error_message):
+        match = re.search(r'Please try again in (\d+h)?(\d+m)?(\d+s)?', error_message)
+        if match:
+            hours = int(match.group(1)[:-1]) if match.group(1) else 0
+            minutes = int(match.group(2)[:-1]) if match.group(2) else 0
+            seconds = int(match.group(3)[:-1]) if match.group(3) else 0
+            
+            # Calculate total seconds
+            total_seconds = hours * 3600 + minutes * 60 + seconds
+            
+            # Calculate the future timestamp in global seconds
+            current_time = datetime.fromisoformat('2024-12-23T16:50:35+07:00')
+            current_timestamp = int(current_time.timestamp())
+            future_timestamp = current_timestamp + total_seconds
+            
+            self.accoutn_log["rate_limit"] = True
+            self.accoutn_log["future_timestamp"] = future_timestamp
+            # print(f"Текущее время (timestamp): {current_timestamp}")
+            # print(f"Время ожидания (секунды): {total_seconds}")
+            # print(f"Будет доступно (timestamp): {future_timestamp}")
+            
+            # return f"{hours}h {minutes}m {seconds}s"
+        return "Неизвестно"
 
-async def generate_response(message, history):
-    try:
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=history + [message], # TODO тут мессадж это словарь
-            # messages=[{"role": "system", "content": system_prompt_ru}] + history + [{"role": "user", "content": message}],
-            store=True,
-            # messages=[
-            #     {"role": "system", "content": system_prompt_ru},
-            #     {"role": "user", "content": message}
-            # ],
-            # stream=True,
-        )
-        result = completion.choices[0].message.content
-        return result
-    except Exception as e:
-        return f"Ошибка генерации ответа: {e}"
-
-# print(asyncio.run(generate_response({"role": "user", "content": "какая версия докера?"}, [])))        
-
-# from openai import OpenAI
-
-# client = OpenAI(
-#   api_key="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"
-# )
-
-# completion = client.chat.completions.create(
-#   model="gpt-4o-mini",
-#   store=True,
-#   messages=[
-#     {"role": "user", "content": "write a haiku about ai"}
-#   ]
-# )
-
-# print(completion.choices[0].message);
-
-
-# q = asyncio.run(generate_response("напомни как ее зовут?", [
-#                 {
-#                     'role': 'dsad',
-#                     # 'metadata': None,
-#                     'content': "привет, зебру зовут Бэн",
-#                     # 'options': None
-#                 },
-#                 {
-#                     'role': 'aawssd',
-#                     # 'metadata': None,
-#                     'content': "привет, окей",
-#                     # 'options': None
-#                 }
-#             ],))
-# print(q)
-
-"""
-Dict(role: str, metadata: None, content: str, options: None)
-"""
-
-
-# from openai import OpenAI
-
-
-# completion = client.chat.completions.create(
-#   model="gpt-4o-mini",
-#   store=True,
-#   messages=[
-#     {"role": "system", "content": system_prompt_ru},
-#     {"role": "user", "content": "сколько контейнеров щас работает?"}
-#   ]
-# )
-
-# print(completion.choices[0].message);
+# Пример использования
+# openai_token_wait1_to_24_12_2024 = "ваш_токен"  # Замените на ваш токен
+# response = asyncio.run(NN(openai_token_wait1_to_24_12_2024).generate_response({"role": "user", "content": "какая версия докера?"}, []))
+# print(response)

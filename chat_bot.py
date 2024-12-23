@@ -4,19 +4,29 @@ import time
 import threading
 import json
 import os
-from nn import generate_response
+from nn import NN
 from signals import *
 from config import *
+from accounts_controller import AccountsController
 
 class ChatBot:
     
     def __init__(self):
+        self.NN = NN("")
+        self.accounts_controller = AccountsController()
+        self.set_active_token()
         self.special_sym = '№%;№:?%:;%№(743__0='
         self.filename = "context.json"
-        # res = run_command("pwd")
-        # self.append_to_history()
-        
         self.init_local_context_history()
+
+    def set_token_for_nn(self, key):
+        self.NN.set_token(key)
+
+    def set_active_token(self):
+        self.set_token_for_nn(self.accounts_controller.get_active_token())
+        if self.NN.current_token is None:
+            print("Токен не найден. Пожалуйста, введите токен:")
+            self.NN.current_token = input()
 
     def add_user_message(self, message):
         self.append_to_history({"role": "user", "content": message})
@@ -26,7 +36,6 @@ class ChatBot:
 
     def append_to_history(self, content):
         self.history['history'].append(content)
-        # Обновление JSON файла
         with open(self.filename, 'r+', encoding='utf-8') as f:
             data = json.load(f)
             data['history'].append(content)
@@ -71,12 +80,23 @@ class ChatBot:
         q = []
         for i in signal_params:
             q.append(i.replace('"', '').replace("'", ""))
-        # signal_params = self.get_signal_params(signal)
         return ''.join(q)
 
     async def send_request(self, prompt):
         try:
-            result = await generate_response(prompt, self.history['history'])
+            result = await self.NN.generate_response(prompt, self.history['history'])
+            if self.NN.accoutn_log["rate_limit"]:
+                # помечаю текущий токен как неактуальный
+                self.accounts_controller.update_account(
+                    self.NN.current_token,
+                    self.NN.accoutn_log["future_timestamp"],
+                    False,
+                    False
+                )
+
+                # обновляю активный токен
+                self.set_active_token()
+                pass
             self.spinner_thread.join()
             self.add_bot_message(result.replace(' {__SIGNAL__} ', self.special_sym))
             print(f'\n{result.replace(' {__SIGNAL__} ', self.special_sym)}')
@@ -167,7 +187,6 @@ class ChatBot:
                 if res is not None:
                     res = str(res)
                     print(res)
-                    # prompt = self.get_history_prompt()
                     await self.send_request({"role": "user", "content": "Результат выполнения сигнала:"+ res})
         except Exception as e:
             q = 1
@@ -188,17 +207,10 @@ class ChatBot:
         while True:
             user_input = input('You: ')
             self.add_user_message(user_input)
-
-            # Запускаем спиннер в отдельном потоке
             self.spinner_thread = threading.Thread(target=self.display_spinner)
             self.spinner_thread.start()
-
-            # Создаем подсказку из истории
             prompt = self.get_history_prompt()
-
             await self.send_request({"role": "user", "content": user_input})
-            
-            # Ждем завершения спиннера
             
 
 # Пример использования
