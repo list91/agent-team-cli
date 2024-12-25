@@ -16,6 +16,7 @@ def run_command(command):
     try:
         res = ""
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_directory)
         while True:
             output = process.stdout.readline()
             if output == b'' and process.poll() is not None:
