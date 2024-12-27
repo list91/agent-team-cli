@@ -22,7 +22,16 @@
 """
 from chat_bot import ChatBot
 import asyncio
-
+import signals
+import os
+DEBUG_MODE = True
 if __name__ == "__main__":
+    
+    if DEBUG_MODE == True:
+        try:
+            os.remove(os.path.join(os.getcwd(), "context.json"))
+        except FileNotFoundError:
+            pass
+    
     chatbot = ChatBot()
     asyncio.run(chatbot.run_chat())

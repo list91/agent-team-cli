@@ -55,7 +55,7 @@ class ChatBot:
                 self.history = json.load(f)
 
     def manage_history(self):
-        if len(self.history['history']) > 10:
+        if len(self.history['history']) > 100:
             self.history['history'].pop(0)
 
     def is_signals(self, text):
@@ -64,42 +64,66 @@ class ChatBot:
             return count % 2 == 0
         return False
 
-    def get_signal_params(self, signal):
-        left = None
-        right = None
-        if "('" in signal and "')" in signal:
-            left = signal.index("('")
-            right = signal.index("')")
-        elif '("' in signal and '")' in signal:
-            left = signal.index('("')
-            right = signal.index('")')
-        else:
-            return None
+    def get_signal_params(self, signal): # TODO тут остановился, правил парс сигналов
+        signal_markers = [
+            "run_command",
+            "search",
+            "analyze",
+            "create_file",
+            "update_file"
+        ]
+        for marker in signal_markers:
+            match = re.search(marker + r"\('([^']+)'\)", signal)
+        if match:
+            return match.group(1)
+            # print(extracted_code)
+        # left = None
+        # right = None
+        # if "('" in signal and "')" in signal:
+        #     left = signal.index("('")
+        #     right = signal.index("')")
+        # elif '("' in signal and '")' in signal:
+        #     left = signal.index('("')
+        #     right = signal.index('")')
+        # else:
+        #     return None
         
-        signal_params = signal[left+2:right]
-        q = []
-        for i in signal_params:
-            q.append(i.replace('"', '').replace("'", ""))
-        return ''.join(q)
+        # signal_params = signal[left+2:right]
+        # q = []
+        # for i in signal_params:
+        #     q.append(i.replace('"', '').replace("'", ""))
+        # return ''.join(q)
+    def check_log(self):
+        if self.NN.accoutn_log["rate_limit"]:
+            # помечаю текущий токен как неактуальный
+            self.accounts_controller.update_account(
+                self.NN.current_token,
+                self.NN.accoutn_log["future_timestamp"],
+                False,
+                False
+            )
+        if self.NN.accoutn_log["is_locked"]:
+            # помечаю текущий токен как неактуальный
+            self.accounts_controller.update_account(
+                self.NN.current_token,
+                0,
+                False,
+                True
+            )
+
+        # обновляю активный токен
+        self.set_active_token()
 
     async def send_request(self, prompt):
         try:
             result = await self.NN.generate_response(prompt, self.history['history'])
-            if self.NN.accoutn_log["rate_limit"]:
-                # помечаю текущий токен как неактуальный
-                self.accounts_controller.update_account(
-                    self.NN.current_token,
-                    self.NN.accoutn_log["future_timestamp"],
-                    False,
-                    False
-                )
-
-                # обновляю активный токен
-                self.set_active_token()
-                pass
+            self.check_log()
             self.spinner_thread.join()
-            self.add_bot_message(result.replace(' {__SIGNAL__} ', self.special_sym))
             print(f'\n{result.replace(' {__SIGNAL__} ', self.special_sym)}')
+            if "Error code:" in str(result):
+                await self.send_request(prompt)
+                return
+            self.add_bot_message(result.replace(' {__SIGNAL__} ', self.special_sym))
             if self.is_signals(result):
                 signal = result.split(self.special_sym)[-2]
                 res = None
@@ -205,11 +229,11 @@ class ChatBot:
 
     async def run_chat(self):
         while True:
-            user_input = input('You: ')
+            user_input = input('~You: ')
             self.add_user_message(user_input)
             self.spinner_thread = threading.Thread(target=self.display_spinner)
             self.spinner_thread.start()
-            prompt = self.get_history_prompt()
+            # prompt = self.get_history_prompt()
             await self.send_request({"role": "user", "content": user_input})
             
 
