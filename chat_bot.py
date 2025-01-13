@@ -8,11 +8,12 @@ from nn import NN
 from signals import *
 from config import *
 from accounts_controller import AccountsController
+from openrouter_config import openrouter_api_key
 
 class ChatBot:
     
     def __init__(self):
-        self.NN = NN("")
+        self.NN = NN(openrouter_api_key)
         self.accounts_controller = AccountsController()
         self.set_active_token()
         self.special_sym = '№%;№:?%:;%№(743__0='
@@ -20,13 +21,10 @@ class ChatBot:
         self.init_local_context_history()
 
     def set_token_for_nn(self, key):
-        self.NN.set_token(key)
+        pass  # Не меняем токен, так как используем OpenRouter
 
     def set_active_token(self):
-        self.set_token_for_nn(self.accounts_controller.get_active_token())
-        if self.NN.current_token is None:
-            print("Токен не найден. Пожалуйста, введите токен:")
-            self.NN.current_token = input()
+        pass  # Не меняем токен, так как используем OpenRouter
 
     def add_user_message(self, message):
         self.append_to_history({"role": "user", "content": message})
@@ -39,9 +37,9 @@ class ChatBot:
         with open(self.filename, 'r+', encoding='utf-8') as f:
             data = json.load(f)
             data['history'].append(content)
-            f.seek(0)  # Переместить указатель в начало файла
+            f.seek(0)
             json.dump(data, f, ensure_ascii=False, indent=4)
-            f.truncate()  # Удалить лишние данные
+            f.truncate()
         self.manage_history()
 
     def init_local_context_history(self):
@@ -85,18 +83,20 @@ class ChatBot:
     async def send_request(self, prompt):
         try:
             result = await self.NN.generate_response(prompt, self.history['history'])
-            if self.NN.accoutn_log["rate_limit"]:
-                # помечаю текущий токен как неактуальный
-                self.accounts_controller.update_account(
-                    self.NN.current_token,
-                    self.NN.accoutn_log["future_timestamp"],
-                    False,
-                    False
-                )
-
-                # обновляю активный токен
-                self.set_active_token()
-                pass
+            if result is None:
+                print("\nОшибка:")
+                # await self.send_request(prompt)
+                return
+                
+            # if self.NN.accoutn_log["rate_limit"]:
+            #     self.accounts_controller.update_account(
+            #         self.NN.current_token,
+            #         self.NN.accoutn_log["future_timestamp"],
+            #         False,
+            #         False
+            #     )
+            #     self.set_active_token()
+            
             self.spinner_thread.join()
             self.add_bot_message(result.replace(' {__SIGNAL__} ', self.special_sym))
             print(f'\n{result.replace(' {__SIGNAL__} ', self.special_sym)}')
@@ -206,10 +206,11 @@ class ChatBot:
     async def run_chat(self):
         while True:
             user_input = input('You: ')
+            if not user_input:
+                continue
             self.add_user_message(user_input)
             self.spinner_thread = threading.Thread(target=self.display_spinner)
             self.spinner_thread.start()
-            prompt = self.get_history_prompt()
             await self.send_request({"role": "user", "content": user_input})
             
 

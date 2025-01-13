@@ -18,24 +18,42 @@ class NN():
     
     def set_token(self, key):
         self.current_token = key
-        self.client = OpenAI(api_key=self.current_token)
+        self.client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=self.current_token,
+            default_headers={
+                "HTTP-Referer": "http://localhost",
+                "X-Title": "Local LLM Client"
+            }
+        )
 
     def accoutn_log_clear(self):
         self.accoutn_log = {"rate_limit": False, "future_timestamp": 0}
 
     async def generate_response(self, message, history):
         try:
+            # Преобразуем все сообщения в правильную кодировку
+            encoded_messages = []
+            for msg in [{"role": "system", "content": self.system_prompt}] + history + [message]:
+                encoded_msg = {
+                    "role": msg["role"],
+                    "content": msg["content"]
+                }
+                encoded_messages.append(encoded_msg)
+            
             completion = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "system", "content": self.system_prompt}] + history + [message],
-                store=True,
+                model="google/gemini-2.0-flash-exp:free",
+                messages=encoded_messages
             )
-            result = completion.choices[0].message.content
-            return result
+            
+            if completion and completion.choices:
+                return completion.choices[0].message.content
+            return None
+            
         except Exception as e:
-            print(self.handle_error(e))
-            return e
-        
+            print(f"API Error: {str(e)}")
+            return None
+
     def handle_error(self, error):
         if "Rate limit reached" in str(error):
             time_remaining = self.extract_time_remaining(str(error))
