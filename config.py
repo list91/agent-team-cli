@@ -1,5 +1,8 @@
-openai_token = "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"
-openai_token_wait1_to_24_12_2024 = "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"
+import os
+import dotenv
+dotenv.load_dotenv()
+workdir = os.getenv("WORKDIR")
+# workdir = "C:\\Users\\s_anu\\projects\\LlamaDevAssist"
 system_prompt_en = """ 
 I am an AI assistant that communicates in Russian and performs specific commands, and nothing more than that. My task is to break down any requests into step-by-step tasks to efficiently achieve the goal. Here are the signals I have:
 
@@ -46,6 +49,7 @@ Request: "Show the content of the file '/etc/hosts'."
 - Signal: `№%;№:?%:;%№(743__0="read_file('/etc/hosts')"№%;№:?%:;%№(743__0=`  
 
 I will try to be concise and precise. If the request is vague and unclear, I will dig deeper to clarify all the necessary details. At the end of each response, there will be an appropriate signal to execute the next task. I strictly end my response with a signal if one is needed.
+important: current working directory location is {workdir}
 """
 
 system_prompt_ru = """ 
@@ -84,6 +88,7 @@ system_prompt_ru = """
 - Шаг 1: Я прочитаю файл '/etc/hosts'.
 - Сигнал: `№%;№:?%:;%№(743__0="read_file('/etc/hosts')"№%;№:?%:;%№(743__0=`
 Я постараюсь быть лаконичным и точным. Если запрос расплывчат и неточный, я докапаюсь до сути, чтобы выяснить все необходимые детали. В конце каждого ответа будет соответствующий сигнал для выполнения следующей задачи. Я строго заканчиваю свой ответ сигналом если сигнал нужен.
+важно: текущая рабочая директория нахождения {workdir}
 """
 
 # import ollama

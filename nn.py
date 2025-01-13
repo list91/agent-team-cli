@@ -14,7 +14,6 @@ class NN():
     def __init__(self, key):
         self.set_token(key)
         self.system_prompt = system_prompt_ru
-        self.accoutn_log_clear()
     
     def set_token(self, key):
         self.current_token = key
@@ -28,7 +27,7 @@ class NN():
         )
 
     def accoutn_log_clear(self):
-        self.accoutn_log = {"rate_limit": False, "future_timestamp": 0}
+        self.accoutn_log = {"rate_limit": False, "future_timestamp": 0, "is_locked": None}
 
     async def generate_response(self, message, history):
         try:
@@ -58,7 +57,13 @@ class NN():
         if "Rate limit reached" in str(error):
             time_remaining = self.extract_time_remaining(str(error))
             return f"Ошибка генерации ответа: {str(error)}. Ожидание: {time_remaining}"
+        if 'account_deactivated' in str(error):
+            self.account_deactivated()
+            return f"Ошибка генерации ответа: {str(error)}. Деактивируем аккаунт"
         return f"Ошибка генерации ответа: {str(error)}"
+
+    def account_deactivated(self):
+        self.accoutn_log["is_locked"] = True
 
     def extract_time_remaining(self, error_message):
         match = re.search(r'Please try again in (\d+h)?(\d+m)?(\d+s)?', error_message)

@@ -3,7 +3,7 @@ import os
 import time
 import re
 import json
-
+import dotenv
 
 # рун_коммнад - внутри доп оболочки выполняет команду, как только кончит так его вывод добавляем в конекст...отдаем ИИ и ждем ответа
 # анализ - логика которая принимает путь и возвращает метаданные файла или директории (размер, владелец и т. д.), вывод добавляем в конекст...отдаем ИИ и ждем ответа
@@ -11,11 +11,11 @@ import json
 # серч - принимает путь и строку, динамически ищет и вернет число совпадений, вывод добавляем в конекст...отдаем ИИ и ждем ответа
 # создать_файл - принимает путь, строку, строку; создаст файл с заданным содержимым, именем, в заданном месте, вернет успех?, вывод добавляем в конекст...отдаем ИИ и ждем ответа
 # редачить_файл? - экспериментально
-
+dotenv.load_dotenv()
 def run_command(command):
     try:
         res = ""
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getenv("WORKDIR"))
         # process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_directory)
         while True:
             output = process.stdout.readline()
@@ -102,11 +102,14 @@ def search(path, pattern):
         return f'Error: {e}'
 
 def create_file(path, content):
+    content = content.replace('\\n', '\n').replace('\\t', '\t').replace('\"', '"').replace('\'', "'")
+    if not path:
+        return 'Error: Path is empty.'
+    if ":\\" not in path:
+        path = os.getenv("WORKDIR") + "\\" + path
     try:
         print(f'Attempting to create file at: {path}')
         
-        if not path:
-            return 'Error: Path is empty.'
         
         dir_name = os.path.dirname(path)
         
@@ -122,7 +125,7 @@ def create_file(path, content):
 
 def update_file(path, content):
     try:
-        content = content.replace('\\n', '\n')
+        content = content.replace('\\n', '\n').replace('\\t', '\t').replace('\"', '"').replace('\'', "'")
         full_path = os.path.abspath(path)  # Получаем полный путь к файлу
         if not os.path.exists(os.path.dirname(full_path)):
             os.makedirs(os.path.dirname(full_path))
