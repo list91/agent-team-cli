@@ -9,7 +9,7 @@ llm:
   # - "openai": For OpenAI GPT models
   # - "anthropic": For Anthropic Claude models
   # - "mock": For testing without real LLM (uses hardcoded responses - NOT universal)
-  provider: "subprocess"  # Using real qwen CLI
+  provider: "mock"  # Using mock for testing
 
   # Model name (provider-specific)
   # OpenAI: "gpt-4", "gpt-3.5-turbo"

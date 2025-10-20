@@ -167,67 +167,51 @@ class SubprocessLLMProvider(LLMProvider):
         logger = logging.getLogger(__name__)
 
         try:
-            # qwen требует работы в project directory (VS Code workspace)
-            # Создаем temp файл в .qwen_temp/ внутри проекта
-            import os
-            import uuid
-
-            # Используем текущую директорию как project root
-            project_root = Path.cwd()
-            temp_dir = project_root / ".qwen_temp"
-            temp_dir.mkdir(exist_ok=True)
-
-            # Уникальное имя для этого вызова
-            call_id = uuid.uuid4().hex[:8]
-            output_file = temp_dir / f"response_{call_id}.json"
-
-            # ПРОСТОЙ и ПРЯМОЙ промпт - qwen любит простые команды!
+            # УПРОЩЕННЫЙ подход: qwen возвращает JSON в stdout
+            # НЕ просим создать файл - это усложняет промпт
             task = f"""{system_prompt}
 
 {user_prompt}
 
-Create a file named '.qwen_temp/response_{call_id}.json' with your response in JSON format. Do it now."""
+Respond with ONLY valid JSON. No explanations, no markdown, just JSON."""
 
-            # Use qwen with approval-mode=yolo (auto-approve all file operations)
+            # qwen требует работы в project directory (VS Code workspace)
+            project_root = Path.cwd()
+
+            # Use qwen with approval-mode=yolo (auto-approve file operations if needed)
             cmd = [
                 self.command,
                 "-p", task,
-                "--approval-mode", "yolo"  # Auto-approve file writes
+                "--approval-mode", "yolo"
             ]
 
-            logger.info(f"[SubprocessLLM/qwen] Starting qwen agent (call_id: {call_id})")
-            logger.debug(f"[SubprocessLLM/qwen] Output file: {output_file}")
+            logger.info(f"[SubprocessLLM/qwen] Starting qwen")
 
-            # Execute qwen from project root (not temp dir!)
+            # Execute qwen from project root
             proc = self.subprocess.Popen(
                 cmd,
                 cwd=project_root,  # ← ВАЖНО: запускаем из project root
                 stdout=self.subprocess.PIPE,
                 stderr=self.subprocess.PIPE,
-                text=True
+                text=True,
+                encoding='utf-8',  # ← FIX: Windows cp1251 -> UTF-8
+                errors='replace'   # ← Replace undecodable chars instead of crash
             )
 
             # Wait for qwen to finish
             stdout, stderr = proc.communicate(timeout=self.timeout)
 
-            logger.debug(f"[SubprocessLLM/qwen] stdout:\n{stdout[:1000]}")
+            logger.info(f"[SubprocessLLM/qwen] stdout length: {len(stdout)} chars")
+            logger.info(f"[SubprocessLLM/qwen] First 500 chars of stdout:\n{stdout[:500]}")
             if stderr:
-                logger.warning(f"[SubprocessLLM/qwen] stderr: {stderr[:500]}")
+                logger.debug(f"[SubprocessLLM/qwen] stderr: {stderr[:500]}")
 
-            # Check if qwen created the response file
-            if output_file.exists():
-                response = output_file.read_text(encoding='utf-8')
-                logger.info(f"[SubprocessLLM/qwen] ✅ Read response from file ({len(response)} chars)")
-                # Cleanup
-                try:
-                    output_file.unlink()
-                except:
-                    pass
-                return response.strip()
-            else:
-                # Fallback: parse JSON from stdout if file wasn't created
-                logger.warning(f"[SubprocessLLM/qwen] ❌ {output_file.name} not found, falling back to stdout")
+            # Parse stdout directly
+            if stdout:
+                logger.info(f"[SubprocessLLM/qwen] ✅ Got response, returning to parser")
                 return stdout.strip()
+            else:
+                raise RuntimeError(f"qwen returned no output (stderr: {stderr[:200]})")
 
         except self.subprocess.TimeoutExpired:
             proc.kill()

@@ -1,0 +1,1211 @@
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:04:19] Clarification server started on port 8000
+         [00:04:19] Found 4 available agents: ['coder', 'documenter', 'echo', 'tester']
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - LIVE STATUS
+============================================================
+[MASTER] Status: Active
+         [00:09:19] Decomposed task into 1 subtasks: ['echo']
+         [00:09:19] Running sub-agent: echo
+[ECHO] [ ] Waiting to start...
+============================================================
+Live monitoring - refreshes every 2 second(s) (Ctrl+C to interrupt)
+============================================================
+MSP ORCHESTRATOR - TASK COMPLETED
+============================================================
+Task: Create test file
+Subtasks completed: 1
+Successful results: 0
+Files produced: 0
+============================================================
+Task completed successfully!
+Files produced: []
