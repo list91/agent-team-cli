@@ -1,0 +1,9 @@
+name: "documenter"
+description: "Generates documentation based on task requirements"
+capabilities:
+  - "documentation"
+  - "specification"
+accepts_bridges: true
+default_tools:
+  - "file_write"
+  - "shell"

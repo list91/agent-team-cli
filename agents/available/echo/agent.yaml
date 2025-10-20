@@ -1,0 +1,8 @@
+name: "echo"
+description: "Simple echo agent for testing and fallback"
+capabilities:
+  - "simple_response"
+  - "testing"
+accepts_bridges: false
+default_tools:
+  - "none"

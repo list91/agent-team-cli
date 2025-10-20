@@ -1,0 +1,8 @@
+# Global configuration for MSP Orchestrator
+version: 1.0
+default_max_scratchpad_chars: 8192
+default_allowed_tools:
+  - file_read
+  - file_write
+  - shell
+log_level: INFO

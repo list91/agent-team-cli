@@ -2,43 +2,126 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
 
-# Distribution / packaging
-dist/
-build/
-*.egg-info/
+# C extensions
+*.o
+*.pyd
 
-# Virtual environments
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Environment
 venv/
 env/
-.env/
-.venv/
 ENV/
+env.bak/
+venv.bak/
 
-# IDE specific files
-.idea/
+# Project-specific virtual environments
+.venv/
+.env/
+
+# IDEs
 .vscode/
+.idea/
 *.swp
 *.swo
+*~
+
+# System files
 .DS_Store
-
-# Local development settings
-.env
-.env.local
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pytest
-.pytest_cache/
-.coverage
-htmlcov/
-
-# mypy
-.mypy_cache/
+Thumbs.db
 
 # Logs
 *.log
+output.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Translations
+*.mo
+*.pot
+
+# Documentation
+docs/_build/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+
+# User-specific files
+.pydevproject
+.project
+*.pyc
+*.pyo
+*.orig
+
+# Configuration
+config/
+local_settings.py
+
+# Scratchpads and runtime files
+*.scratchpad.md
+master.scratchpad.md
+coder_*.scratchpad.md
+documenter_*.scratchpad.md
+echo_*.scratchpad.md
+
+# Agent-specific output files
+agents/available/*/output/
+agents/available/*/*.tmp
+agents/available/*/*.tmp.*
+
+# Shared contexts and bridges
+shared/
+
+# Tasks archive
+tasks/
+
+# Output files from agents
+main.py
+Dockerfile
+openapi.yaml
+requirements.txt
+
+# Temporary files created during execution
+*.tmp
+tmp/
+temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

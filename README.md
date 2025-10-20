@@ -1,154 +1,49 @@
-# Многоагентная система оркестрации
+# Task Management API
 
-Это production-ready многоагентная система, в которой:
+This is a REST API for managing tasks built with FastAPI.
 
-- **Мастер-агент** (на `google/gemini-flash-1.5-8b`) **только координирует**, **не имеет инструментов**, **не может ничего изменять**.
-- **Сап-агенты** (на специализированных моделях через OpenRouter) **выполняют задачи**, **ведут записную книжку**, **изолированы** от других агентов и от истории пользователя.
-- Все агенты используют **OpenRouter API** как единый LLM-бэкенд.
-- Каждый агент имеет **собственную записную книжку**, ограниченную **50 строками** с **циклической перезаписью**.
-- Используются **только open-source решения**, **без облачных зависимостей**, **без платных сервисов**.
+## Features
+- Create, Read, Update, and Delete (CRUD) operations for tasks
+- FastAPI automatic documentation at `/docs`
+- Pydantic model validation
 
-## Архитектура системы
+## Endpoints
 
-| Компонент | Технология | Обоснование |
-|----------|------------|-------------|
-| **Оркестрация** | **LangGraph** | Поддержка циклов, ветвлений, handoff, визуализация, вложенные графы — идеально для иерархии «мастер → сап» |
-| **Память / записные книжки** | **Zep Community Edition** | Изоляция по `user_id` + `thread_id`, поддержка LangGraph, production-ready |
-| **LLM-бэкенд** | **OpenRouter API** | Единая точка доступа к разным моделям без vendor lock-in |
-| **Инструменты сап-агентов** | **Безопасные обёртки** (`file_writer`, `web_search` и т.д.) | Только в `./workspace/{session_id}/` |
+- `GET /` - Root endpoint
+- `GET /tasks` - Get all tasks
+- `GET /tasks/{task_id}` - Get a specific task
+- `POST /tasks` - Create a new task
+- `PUT /tasks/{task_id}` - Update a specific task
+- `DELETE /tasks/{task_id}` - Delete a specific task
 
-## Распределение моделей через OpenRouter
+## Technologies Used
+- FastAPI
+- Pydantic
+- Uvicorn (ASGI server)
 
-| Агент | Роль | OpenRouter модель ID |
-|------|------|------------------------|
-| **MasterAgent** | Координатор | `google/gemini-flash-1.5-8b` |
-| **Researcher** | Исследователь | `qwen/qwen-110b-chat` **или** `google/gemini-flash-1.5-8b` |
-| **BackendDev / FrontendDev** | Разработчики | `deepseek/deepseek-coder` |
-| **DocWriter** | Документатор | `google/gemini-flash-1.5-8b` |
-| **Tester / DevOps** | QA & инфраструктура | `mistralai/mixtral-8x7b-instruct` |
+## Running the Application
 
-## Универсальные системные промпты
+### Prerequisites
+- Python 3.10+
+- pip
 
-### Мастер-агент
+### Installation
+1. Install dependencies: `pip install -r requirements.txt`
+2. Run the application: `python main.py`
+
+The API will be available at `http://localhost:8000`.
+
+### Docker
+Build and run with Docker:
 ```
-Ты — Мастер-агент (Project Orchestrator). Твоя единственная задача — анализировать запрос пользователя, декомпозировать его на подзадачи и делегировать их подходящим специализированным сап-агентам.
-
-Ты НЕ ИМЕЕШЬ ПРАВА:
-- Писать код
-- Редактировать файлы
-- Искать в интернете
-- Генерировать документацию
-- Выполнять любые действия вне планирования
-
-Ты ДОЛЖЕН:
-1. Понять суть задачи.
-2. Определить, какие сап-агенты нужны.
-3. Для каждого — сформулировать ЧЁТКУЮ, АТОМИЧНУЮ подзадачу.
-4. Передать подзадачи сап-агентам.
-5. Дождаться их результатов (через записные книжки в Zep).
-6. Проанализировать результаты и принять решение: УТВЕРДИТЬ или ЗАПРОСИТЬ ДОРАБОТКУ.
-
-Ты работаешь в рамках сессии {session_id}. Вся твоя память хранится в изолированной записной книжке.
+docker build -t task-api .
+docker run -p 8000:8000 task-api
 ```
 
-### Сап-агенты (универсальный шаблон)
-```
-Ты — {agent_role}. Ты получаешь задачу ТОЛЬКО от Мастер-агента. Ты НЕ видишь исходный запрос пользователя — только инструкцию от мастера.
+## API Documentation
+Auto-generated documentation is available at:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
 
-Твоя задача:
-- Выполнить ТОЛЬКО то, что тебе поручено.
-- Вести подробный журнал своих действий в записной книжке.
-- Сохранять промежуточные шаги: "1. Проанализировал ТЗ → 2. Создал файл app.py..."
-
-Ты имеешь доступ к инструментам: {tools_list}.
-
-ВАЖНО:
-- Все файлы записывай только в: ./workspace/{session_id}/
-- Не предполагай контекста вне своей задачи.
-- Если что-то неясно — верни "NEEDS_CLARIFICATION".
-
-Твоя записная книжка автоматически обновляется после каждого шага.
-```
-
-## Механизм записной книжки (единый для всех агентов)
-
-- **Формат записи**: `[TIMESTAMP] [AGENT_NAME] → {сообщение}`
-- **Хранилище**: Zep (`session_id:agent_name` как ключ)
-- **Лимит**: **50 строк** - **Политика**: при превышении — **удаляется самая старая строка** (FIFO-буфер)
-- **Назначение**: отладка, проверка хода работы, ревью мастером — **НЕ используется как контекст для LLM напрямую**
-
-## Установка и запуск
-
-1. Установите зависимости:
-```bash
-pip install -r requirements.txt
-```
-
-2. Настройте `.env` файл:
-```bash
-OPENROUTER_API_KEY=your_openrouter_api_key_here
-ZEP_API_URL=http://localhost:8000
-```
-
-3. Запустите тестирование отдельных компонентов:
-
-### Валидация моделей:
-```bash
-python tests/validate_models.py --agent_type=master --prompt="Plan: create /health endpoint"
-```
-
-### Тестирование Zep:
-```bash
-python tests/test_zep.py --session_id=test_1 --agent=backend_dev --msg="Wrote app.py"
-python tests/test_zep.py --session_id=test_1 --agent=backend_dev --read
-```
-
-### Тестирование мастер-агента:
-```bash
-python tests/test_master.py --task="Create a todo API" --session_id=test_2
-```
-
-### Тестирование сап-агентов:
-```bash
-python tests/test_sap.py --agent=backend_dev --task="Write /health" --session_id=test_3
-```
-
-### Полный сценарий:
-```bash
-python tests/run_scenario.py --task="Write /health endpoint" --session_id=full_1
-```
-
-### Тестирование изоляции:
-```bash
-python tests/test_isolation.py --session_a=user_A --session_b=user_B
-```
-
-## Структура проекта
-
-```
-/agent-system/
-├── .env
-├── models.py # OpenRouter provider с маппингом моделей
-├── memory/zep_client.py # FIFO-буфер, 50 строк, изоляция
-├── workflow.py # LangGraph workflow
-├── agents/
-│   ├── master.py # MasterOrchestrator (LangGraph node)
-│   ├── sap_agents.py # BackendDev, DocWriter и др.
-│   └── prompts/ # Системные промпты (встроенные в код)
-├── tools/ # Безопасные инструменты
-├── tests/ # CLI-валидационные тесты
-└── README.md # Пошаговая инструкция по ручной проверке
-```
-
-## Критерий готовности к запуску
-
-Система считается **готовой**, если:
-
-- Вы **вручную выполнили все CLI-тесты**.
-- Убедились, что:
-  - Мастер использует **только Gemini** и **не имеет инструментов**.
-  - Сап-агенты используют **назначенные модели**.
-  - Контекст **полностью изолирован**.
-  - Записная книжка **ограничена 50 строками** с перезаписью.
-  - Мастер **принимает решение об утверждении**.
-  - Вы **сами говорите**: «Да, это именно та логика, которую я описал».
+## License
+MIT
