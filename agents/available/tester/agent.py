@@ -18,19 +18,9 @@ project_root = current_dir.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from agent_contract import AgentContract
+from src.fallbacks import get_fallback_config, get_timestamp
 
-try:
-    from src.config_loader import config
-    from src.utils import get_timestamp
-except ImportError:
-    # Fallback if config loader not available
-    class FallbackConfig:
-        @property
-        def max_scratchpad_chars(self):
-            return 8192
-    config = FallbackConfig()
-    def get_timestamp():
-        return time.strftime('%H:%M:%S')
+config = get_fallback_config()
 
 
 class TesterAgent(AgentContract):
@@ -207,7 +197,7 @@ class TesterAgent(AgentContract):
 
                 # Run syntax check using Python
                 result = subprocess.run([sys.executable, "-m", "py_compile", tmp_path],
-                                      capture_output=True, text=True, timeout=10)
+                                      capture_output=True, text=True, timeout=config.syntax_check_timeout_seconds)
 
                 if result.returncode != 0:
                     issues.append(f"Python syntax error in {file_path.name}: {result.stderr}")
@@ -327,22 +317,24 @@ def main():
     parser.add_argument("--max-scratchpad-chars", type=int, default=config.max_scratchpad_chars, help="Max scratchpad characters")
     parser.add_argument("--allowed-tools", default="", help="Comma-separated list of allowed tools")
     parser.add_argument("--clarification-endpoint", help="HTTP endpoint for clarification requests")
-    
+    parser.add_argument("--bridge-dir", help="Path to shared bridge directory for inter-agent communication")
+
     args = parser.parse_args()
-    
+
     # Parse task
     task = json.loads(args.task)
     allowed_tools = args.allowed_tools.split(",") if args.allowed_tools else []
-    
-    # For now, we don't have access to the bridge manager here
-    # In a real implementation, the bridge manager would be passed from the master
-    # For this example, we'll create a dummy one
+
+    # Create bridge manager if bridge directory provided
     bridge_manager = None
-    
+    if args.bridge_dir:
+        from bridge import BridgeManager
+        bridge_manager = BridgeManager(Path(args.bridge_dir))
+
     # Create and run the tester agent
     agent = TesterAgent(Path(args.scratchpad_path), max_scratchpad_chars=args.max_scratchpad_chars, bridge_manager=bridge_manager)
     result = agent.execute(task, allowed_tools, args.clarification_endpoint)
-    
+
     # Output result as JSON to stdout
     print(json.dumps(result))
 

@@ -15,26 +15,16 @@ sys.path.insert(0, str(project_root))
 
 from agent_contract import AgentContract
 from bridge import BridgeManager
+from src.fallbacks import get_fallback_config, get_timestamp
 
-try:
-    from src.config_loader import config
-except ImportError:
-    # Fallback if config loader not available
-    class FallbackConfig:
-        @property
-        def max_scratchpad_chars(self):
-            return 8192
-    config = FallbackConfig()
+config = get_fallback_config()
 
 try:
     from src.template_loader import load_and_render_template
-    from src.utils import get_timestamp
 except ImportError:
     # Fallback if template loader not available
     def load_and_render_template(template_name, variables):
         raise ImportError("Template loader not available")
-    def get_timestamp():
-        return time.strftime('%H:%M:%S')
 
 
 class DocumenterAgent(AgentContract):
@@ -84,8 +74,8 @@ class DocumenterAgent(AgentContract):
         if "fastapi" in task_description.lower() or "api" in task_description.lower():
             # Generate README.md using template
             template_vars = {
-                "app_title": "Task Management API",
-                "port": "8000"
+                "app_title": config.default_app_title,
+                "port": str(config.default_agent_port)
             }
             readme_content = load_and_render_template("README.md.template", template_vars)
             
@@ -106,8 +96,8 @@ class DocumenterAgent(AgentContract):
             openapi_spec = {
                 "openapi": "3.0.0",
                 "info": {
-                    "title": "Task Management API",
-                    "version": "1.0.0",
+                    "title": config.default_app_title,
+                    "version": config.default_app_version,
                     "description": "A simple API for managing tasks"
                 },
                 "paths": {
@@ -324,22 +314,23 @@ def main():
     parser.add_argument("--max-scratchpad-chars", type=int, default=config.max_scratchpad_chars, help="Max scratchpad characters")
     parser.add_argument("--allowed-tools", default="", help="Comma-separated list of allowed tools")
     parser.add_argument("--clarification-endpoint", help="HTTP endpoint for clarification requests")
-    
+    parser.add_argument("--bridge-dir", help="Path to shared bridge directory for inter-agent communication")
+
     args = parser.parse_args()
-    
+
     # Parse task
     task = json.loads(args.task)
     allowed_tools = args.allowed_tools.split(",") if args.allowed_tools else []
-    
-    # For now, we don't have access to the bridge manager here
-    # In a real implementation, the bridge manager would be passed from the master
-    # For this example, we'll create a dummy one
+
+    # Create bridge manager if bridge directory provided
     bridge_manager = None
-    
+    if args.bridge_dir:
+        bridge_manager = BridgeManager(Path(args.bridge_dir))
+
     # Create and run the documenter agent
     agent = DocumenterAgent(Path(args.scratchpad_path), max_scratchpad_chars=args.max_scratchpad_chars, bridge_manager=bridge_manager)
     result = agent.execute(task, allowed_tools, args.clarification_endpoint)
-    
+
     # Output result as JSON to stdout
     print(json.dumps(result))
 

@@ -30,3 +30,17 @@ default_validation_level: standard
 # Status monitoring
 enable_status_display: true
 status_refresh_seconds: 2
+status_display_width: 60
+status_display_tail_lines: 3
+
+# Default application values (for code generation)
+default_app_title: "Task Management API"
+default_app_version: "1.0.0"
+
+# System limits
+syntax_check_timeout_seconds: 10
+max_port_search_attempts: 100
+thread_join_timeout_seconds: 1
+
+# Scratchpad behavior
+scratchpad_truncation_strategy: "keep_end"

@@ -7,15 +7,9 @@ from typing import Optional
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-try:
-    from src.config_loader import config
-except ImportError:
-    # Fallback if config loader not available
-    class FallbackConfig:
-        @property
-        def max_scratchpad_chars(self):
-            return 8192
-    config = FallbackConfig()
+from src.fallbacks import get_fallback_config
+
+config = get_fallback_config()
 
 
 class Scratchpad:

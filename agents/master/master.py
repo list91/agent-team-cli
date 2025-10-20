@@ -26,28 +26,9 @@ sys.path.insert(0, str(project_root))
 # Local imports
 from scratchpad import Scratchpad
 from bridge import BridgeManager
+from src.fallbacks import get_fallback_config, get_timestamp
 
-try:
-    from src.config_loader import config
-    from src.utils import get_timestamp
-except ImportError:
-    # Fallback if config loader not available
-    class FallbackConfig:
-        @property
-        def max_scratchpad_chars(self):
-            return 8192
-        @property
-        def allowed_tools(self):
-            return ["file_read", "file_write", "shell"]
-        @property
-        def agent_timeout(self):
-            return 300
-        @property
-        def port_range(self):
-            return (8000, 9000)
-    config = FallbackConfig()
-    def get_timestamp():
-        return time.strftime('%H:%M:%S')
+config = get_fallback_config()
 
 
 # Task keyword mapping for agent selection
@@ -208,10 +189,10 @@ class MasterOrchestrator:
 
         # Clear the console (works on Windows and Unix-like systems)
         os.system('cls' if os.name == 'nt' else 'clear')
-        
-        print("="*60)
+
+        print("="*config.status_display_width)
         print("MSP ORCHESTRATOR - LIVE STATUS")
-        print("="*60)
+        print("="*config.status_display_width)
         
         # Show master status
         master_scratchpad_path = self.workdir / "master.scratchpad.md"
@@ -219,7 +200,7 @@ class MasterOrchestrator:
             try:
                 with open(master_scratchpad_path, 'r', encoding='utf-8') as f:
                     master_content = f.read()
-                    last_lines = master_content.split('\n')[-3:] if master_content else []
+                    last_lines = master_content.split('\n')[-config.status_display_tail_lines:] if master_content else []
                     print(f"[MASTER] Status: Active")
                     for line in last_lines:
                         if line.strip():
@@ -236,7 +217,7 @@ class MasterOrchestrator:
                 try:
                     with open(scratchpad_path, 'r', encoding='utf-8') as f:
                         content = f.read()
-                        last_lines = content.split('\n')[-3:] if content else []
+                        last_lines = content.split('\n')[-config.status_display_tail_lines:] if content else []
                         
                         print(f"[{agent_name.upper()}] {status_symbol}")
                         for line in last_lines:
@@ -247,8 +228,8 @@ class MasterOrchestrator:
             else:
                 print(f"[{agent_name.upper()}] [ ] Waiting to start...")
         
-        refresh_interval = getattr(config, 'status_refresh_seconds', 2)
-        print("="*60)
+        refresh_interval = config.status_refresh_seconds
+        print("="*config.status_display_width)
         print(f"Live monitoring - refreshes every {refresh_interval} second(s) (Ctrl+C to interrupt)")
     
     def setup_agent_bridges(self, subtasks: List[Dict]):
@@ -291,9 +272,17 @@ class MasterOrchestrator:
         :param clarification_request: The clarification request from a sub-agent
         :return: User's response to the clarification
         """
+        import sys
         print(f"\n[MASTER] Sub-agent needs clarification: {clarification_request.get('question', 'No question provided')}")
-        response = input("Your response: ")
-        return response
+
+        # Check if stdin is available (not in automated tests)
+        if sys.stdin.isatty():
+            response = input("Your response: ")
+            return response
+        else:
+            # In automated/non-interactive mode, return empty string (agent should handle fallback)
+            print("[MASTER] Running in non-interactive mode, skipping clarification")
+            return ""
     
     def process_clarifications(self):
         """
@@ -418,6 +407,11 @@ class MasterOrchestrator:
 
         if clarification_endpoint:
             cmd.extend(["--clarification-endpoint", clarification_endpoint])
+
+        # Pass bridge directory to agent so it can create its own BridgeManager
+        bridge_dir = self.bridge_manager.shared_dir if self.bridge_manager else None
+        if bridge_dir:
+            cmd.extend(["--bridge-dir", str(bridge_dir)])
 
         # Run the agent as a subprocess
         try:
@@ -606,7 +600,7 @@ class MasterOrchestrator:
                 agent_name=agent_name,
                 task=agent_task,
                 scratchpad_path=agent_scratchpad_path,
-                allowed_tools=["file_read", "file_write", "shell"],
+                allowed_tools=config.allowed_tools,
                 clarification_endpoint=clarification_endpoint
             )
 
@@ -619,7 +613,7 @@ class MasterOrchestrator:
                         agent_name=agent_name,
                         task=agent_task,
                         scratchpad_path=agent_scratchpad_path,
-                        allowed_tools=["file_read", "file_write", "shell"],
+                        allowed_tools=config.allowed_tools,
                         clarification_endpoint=clarification_endpoint
                     )
                     results[-1] = result
@@ -663,7 +657,7 @@ class MasterOrchestrator:
             agent_name="tester",
             task=tester_task,
             scratchpad_path=tester_scratchpad_path,
-            allowed_tools=["file_read", "shell"],
+            allowed_tools=config.allowed_tools,
             clarification_endpoint=clarification_endpoint
         )
 
@@ -713,7 +707,7 @@ class MasterOrchestrator:
                         agent_name=agent_to_fix,
                         task=updated_task,
                         scratchpad_path=rerun_scratchpad_path,
-                        allowed_tools=["file_read", "file_write", "shell"],
+                        allowed_tools=config.allowed_tools,
                         clarification_endpoint=clarification_endpoint
                     )
 

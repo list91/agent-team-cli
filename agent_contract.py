@@ -8,15 +8,9 @@ import sys
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-try:
-    from src.config_loader import config
-except ImportError:
-    # Fallback if config loader not available
-    class FallbackConfig:
-        @property
-        def max_scratchpad_chars(self):
-            return 8192
-    config = FallbackConfig()
+from src.fallbacks import get_fallback_config
+
+config = get_fallback_config()
 
 
 class AgentContract(ABC):
@@ -80,3 +74,15 @@ class AgentContract(ABC):
         :return: True if tool is allowed, False otherwise
         """
         return requested_tool in allowed_tools
+
+    def log(self, message: str):
+        """
+        Log message to scratchpad with timestamp.
+
+        Convenience method to reduce boilerplate in agent implementations.
+        Automatically prepends timestamp in [HH:MM:SS] format.
+
+        :param message: Message to log
+        """
+        from src.fallbacks import get_timestamp
+        self.scratchpad.append(f"[{get_timestamp()}] {message}\n")

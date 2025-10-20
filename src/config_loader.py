@@ -99,6 +99,60 @@ class Config:
             self.load()
         return self.get("status_refresh_seconds", 2)
 
+    @property
+    def status_display_width(self) -> int:
+        if self._config is None:
+            self.load()
+        return self.get("status_display_width", 60)
+
+    @property
+    def status_display_tail_lines(self) -> int:
+        if self._config is None:
+            self.load()
+        return self.get("status_display_tail_lines", 3)
+
+    @property
+    def default_app_title(self) -> str:
+        if self._config is None:
+            self.load()
+        return self.get("default_app_title", "Task Management API")
+
+    @property
+    def default_app_version(self) -> str:
+        if self._config is None:
+            self.load()
+        return self.get("default_app_version", "1.0.0")
+
+    @property
+    def syntax_check_timeout_seconds(self) -> int:
+        if self._config is None:
+            self.load()
+        return self.get("syntax_check_timeout_seconds", 10)
+
+    @property
+    def max_port_search_attempts(self) -> int:
+        if self._config is None:
+            self.load()
+        return self.get("max_port_search_attempts", 100)
+
+    @property
+    def thread_join_timeout_seconds(self) -> int:
+        if self._config is None:
+            self.load()
+        return self.get("thread_join_timeout_seconds", 1)
+
+    @property
+    def scratchpad_truncation_strategy(self) -> str:
+        if self._config is None:
+            self.load()
+        return self.get("scratchpad_truncation_strategy", "keep_end")
+
+    @property
+    def default_agent_port(self) -> int:
+        if self._config is None:
+            self.load()
+        return self.get("default_agent_port", 8000)
+
 
 # Global config instance
 config = Config()

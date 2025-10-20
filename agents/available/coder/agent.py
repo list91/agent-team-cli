@@ -19,16 +19,9 @@ sys.path.insert(0, str(project_root))
 # Local imports
 from agent_contract import AgentContract
 from bridge import BridgeManager
+from src.fallbacks import get_fallback_config, get_timestamp
 
-try:
-    from src.config_loader import config
-except ImportError:
-    # Fallback if config loader not available
-    class FallbackConfig:
-        @property
-        def max_scratchpad_chars(self):
-            return 8192
-    config = FallbackConfig()
+config = get_fallback_config()
 
 try:
     from src.template_loader import load_and_render_template
@@ -36,14 +29,6 @@ except ImportError:
     # Fallback if template loader not available
     def load_and_render_template(template_name, variables):
         raise ImportError("Template loader not available")
-
-try:
-    from src.utils import get_timestamp
-except ImportError:
-    # Fallback if utils not available
-    import time
-    def get_timestamp():
-        return time.strftime('%H:%M:%S')
 
 
 class CoderAgent(AgentContract):
@@ -84,19 +69,23 @@ class CoderAgent(AgentContract):
         import time
         time.sleep(1)
         
-        # Check if we need clarification
-        if "port" not in task_description.lower() and "8000" not in task_description.lower():
-            if clarification_endpoint:
-                question = "Which port should the API server use?"
-                self.scratchpad.append(f"[{get_timestamp()}] Requesting clarification: {question}\n")
-
-                # For this example, we'll just simulate the response
-                # In a real implementation, we would call self.request_clarification()
-                clarification_response = "8000"
-                self.scratchpad.append(f"[{get_timestamp()}] Received clarification: {clarification_response}\n")
+        # Extract port from task description or use default
+        import re
+        port_match = re.search(r'\bport\s+(\d+)\b', task_description.lower())
+        if port_match:
+            extracted_port = port_match.group(1)
+            self.scratchpad.append(f"[{get_timestamp()}] Extracted port from task: {extracted_port}\n")
+        else:
+            # Port not explicitly mentioned - try to find any number that looks like a port
+            port_numbers = re.findall(r'\b(\d{4,5})\b', task_description)
+            valid_ports = [p for p in port_numbers if 1 <= int(p) <= 65535]
+            if valid_ports:
+                extracted_port = valid_ports[0]
+                self.scratchpad.append(f"[{get_timestamp()}] Found port number in task: {extracted_port}\n")
             else:
-                # If no clarification endpoint, use default
-                clarification_response = "8000"
+                # No port found - use default without asking
+                extracted_port = str(config.default_agent_port)
+                self.scratchpad.append(f"[{get_timestamp()}] No port specified, using default: {extracted_port}\n")
         
         # Generate code based on task
         self.scratchpad.append(f"[{get_timestamp()}] Generating code...\n")
@@ -157,16 +146,21 @@ class CoderAgent(AgentContract):
 
         :return: Path to generated main.py file
         """
-        template_vars = {
-            "app_title": "Task Management API",
-            "app_version": "1.0.0",
-            "port": "8000"
-        }
-        main_py_content = load_and_render_template("fastapi_main.py.template", template_vars)
+        try:
+            template_vars = {
+                "app_title": config.default_app_title,
+                "app_version": config.default_app_version,
+                "port": str(config.default_agent_port)
+            }
+            main_py_content = load_and_render_template("fastapi_main.py.template", template_vars)
 
-        main_py_path = Path(self.scratchpad_path.parent) / "main.py"
-        self._write_file_safely(main_py_path, main_py_content, "main.py")
-        return main_py_path
+            main_py_path = Path(self.scratchpad_path.parent) / "main.py"
+            self._write_file_safely(main_py_path, main_py_content, "main.py")
+            return main_py_path
+        except (FileNotFoundError, IOError) as e:
+            error_msg = f"Failed to generate FastAPI code: {str(e)}"
+            self.scratchpad.append(f"[{get_timestamp()}] ERROR: {error_msg}\n")
+            raise IOError(error_msg) from e
 
     def _generate_dockerfile(self) -> Path:
         """
@@ -174,12 +168,17 @@ class CoderAgent(AgentContract):
 
         :return: Path to generated Dockerfile
         """
-        template_vars = {"port": "8000"}
-        dockerfile_content = load_and_render_template("Dockerfile.template", template_vars)
+        try:
+            template_vars = {"port": str(config.default_agent_port)}
+            dockerfile_content = load_and_render_template("Dockerfile.template", template_vars)
 
-        dockerfile_path = Path(self.scratchpad_path.parent) / "Dockerfile"
-        self._write_file_safely(dockerfile_path, dockerfile_content, "Dockerfile")
-        return dockerfile_path
+            dockerfile_path = Path(self.scratchpad_path.parent) / "Dockerfile"
+            self._write_file_safely(dockerfile_path, dockerfile_content, "Dockerfile")
+            return dockerfile_path
+        except (FileNotFoundError, IOError) as e:
+            error_msg = f"Failed to generate Dockerfile: {str(e)}"
+            self.scratchpad.append(f"[{get_timestamp()}] ERROR: {error_msg}\n")
+            raise IOError(error_msg) from e
 
     def _send_api_spec_to_documenter(self):
         """
@@ -210,22 +209,36 @@ def main():
     parser.add_argument("--max-scratchpad-chars", type=int, default=config.max_scratchpad_chars, help="Max scratchpad characters")
     parser.add_argument("--allowed-tools", default="", help="Comma-separated list of allowed tools")
     parser.add_argument("--clarification-endpoint", help="HTTP endpoint for clarification requests")
-    
+    parser.add_argument("--bridge-dir", help="Path to shared bridge directory for inter-agent communication")
+
     args = parser.parse_args()
-    
+
     # Parse task
     task = json.loads(args.task)
     allowed_tools = args.allowed_tools.split(",") if args.allowed_tools else []
-    
-    # For now, we don't have access to the bridge manager here
-    # In a real implementation, the bridge manager would be passed from the master
-    # For this example, we'll create a dummy one
+
+    # Create bridge manager if bridge directory provided
     bridge_manager = None
-    
+    if args.bridge_dir:
+        bridge_manager = BridgeManager(Path(args.bridge_dir))
+
     # Create and run the coder agent
     agent = CoderAgent(Path(args.scratchpad_path), max_scratchpad_chars=args.max_scratchpad_chars, bridge_manager=bridge_manager)
-    result = agent.execute(task, allowed_tools, args.clarification_endpoint)
-    
+
+    try:
+        result = agent.execute(task, allowed_tools, args.clarification_endpoint)
+    except Exception as e:
+        # Catch any unhandled exceptions and return as failed result
+        result = {
+            "status": "failed",
+            "error": f"Agent execution error: {type(e).__name__}: {str(e)}"
+        }
+        # Log error to scratchpad if possible
+        try:
+            agent.scratchpad.append(f"[{get_timestamp()}] FATAL ERROR: {type(e).__name__}: {str(e)}\n")
+        except:
+            pass
+
     # Output result as JSON to stdout
     print(json.dumps(result))
 
