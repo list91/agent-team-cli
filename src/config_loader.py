@@ -153,6 +153,20 @@ class Config:
             self.load()
         return self.get("default_agent_port", 8000)
 
+    @property
+    def llm(self) -> Dict[str, Any]:
+        """Get LLM configuration"""
+        if self._config is None:
+            self.load()
+        return self.get("llm", {
+            "provider": "mock",
+            "model": None,
+            "api_key": None,
+            "temperature": 0.7,
+            "max_tokens": 4000,
+            "ollama_host": "http://localhost:11434"
+        })
+
 
 # Global config instance
 config = Config()

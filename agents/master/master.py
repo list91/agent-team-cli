@@ -27,30 +27,19 @@ sys.path.insert(0, str(project_root))
 from scratchpad import Scratchpad
 from bridge import BridgeManager
 from src.fallbacks import get_fallback_config, get_timestamp
+from src.llm_client import create_llm_client_from_config
 
 config = get_fallback_config()
 
-
-# Task keyword mapping for agent selection
-TASK_KEYWORDS = {
-    'coder': {
-        'keywords': ['fastapi', 'api', 'create', 'build', 'implement', 'code',
-                     'application', 'app', 'service', 'server', 'endpoint', 'crud', 'docker'],
-        'priority': 1,
-        'context_type': 'code_generation'
-    },
-    'documenter': {
-        'keywords': ['documentation', 'readme', 'doc', 'explain', 'write',
-                     'describe', 'specify', 'manual', 'guide', 'openapi'],
-        'priority': 2,
-        'context_type': 'documentation'
-    },
-    'tester': {
-        'keywords': ['test', 'validate', 'check', 'verify'],
-        'priority': 3,
-        'context_type': 'testing'
-    }
-}
+# Load system prompts
+def load_prompt(prompt_name: str) -> str:
+    """Load system prompt from prompts directory"""
+    prompt_path = project_root / "prompts" / f"{prompt_name}.txt"
+    try:
+        with open(prompt_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except (IOError, FileNotFoundError):
+        return f"You are a {prompt_name} agent in an MSP system. Complete the given task professionally."
 
 
 class ClarificationHandler(http.server.BaseHTTPRequestHandler):
@@ -81,7 +70,7 @@ class MasterOrchestrator:
     """
     The main orchestrator that manages sub-agents and handles clarifications
     """
-    
+
     def __init__(self, workdir: Path):
         self.workdir = workdir
         self.clarification_requests = []
@@ -92,6 +81,9 @@ class MasterOrchestrator:
         self.monitoring = False
         self.agent_scratchpads = {}
         self.bridge_manager = BridgeManager(workdir / "shared")
+        self.llm_client = create_llm_client_from_config(config)
+        self.master_prompt = load_prompt("master_orchestrator")
+        self._planned_bridges = []  # Bridges planned by LLM during decomposition
     
     def start_clarification_server(self) -> int:
         """
@@ -451,55 +443,111 @@ class MasterOrchestrator:
     
     def decompose_task(self, task_description: str) -> List[Dict]:
         """
-        Decompose the main task into subtasks for different agents using keyword mapping.
+        Decompose the main task into subtasks using LLM analysis.
 
         :param task_description: Original task description
         :return: List of subtasks with agent assignments
         """
-        subtasks = []
-        task_lower = task_description.lower()
-        matched_agents = []
+        available_agents = self.find_available_agents()
 
-        # Find all matching agents based on keywords
-        for agent_name, agent_config in TASK_KEYWORDS.items():
-            if any(keyword in task_lower for keyword in agent_config['keywords']):
-                matched_agents.append((agent_name, agent_config))
+        # Build agent capabilities description
+        agents_info = []
+        for agent in available_agents:
+            name = agent['name']
+            capabilities = agent['config'].get('capabilities', ['basic'])
+            agents_info.append(f"- {name}: {', '.join(capabilities)}")
 
-        # Sort by priority and create subtasks
-        matched_agents.sort(key=lambda x: x[1]['priority'])
+        agents_str = '\n'.join(agents_info) if agents_info else "- echo: basic task execution"
 
-        for agent_name, agent_config in matched_agents:
-            action = self._get_agent_action_verb(agent_name)
-            subtasks.append({
-                "agent": agent_name,
-                "description": f"{action} {task_description}",
-                "context": {"type": agent_config['context_type']}
-            })
+        # Create LLM prompt with strict JSON instructions
+        user_prompt = f"""
+Task: {task_description}
 
-        # Default fallback if no specific agents identified
-        if not subtasks:
-            subtasks.append({
+Available Agents:
+{agents_str}
+
+Analyze this task and determine:
+1. Which agents are needed?
+2. What subtask should each agent work on?
+3. What bridges (communication channels) are needed between agents?
+4. What is the complexity level (1-10)?
+5. What execution strategy should be used?
+
+CRITICAL INSTRUCTION: You MUST respond with ONLY a valid JSON object. Do NOT include any explanatory text, markdown formatting, or additional commentary before or after the JSON. Your entire response should be parseable as JSON.
+
+Required JSON format:
+{{
+  "complexity": 4,
+  "strategy": "flat_delegation",
+  "agents": [
+    {{
+      "name": "coder",
+      "subtask": "Implement REST API with CRUD operations",
+      "priority": 1,
+      "tools": ["file_write", "shell"]
+    }}
+  ],
+  "bridges": [
+    {{
+      "from": "coder",
+      "to": "documenter",
+      "type": "api_specification",
+      "purpose": "Share API endpoints"
+    }}
+  ],
+  "reasoning": "Explanation of your decisions"
+}}
+
+Remember: Output ONLY the JSON object, nothing else.
+"""
+
+        try:
+            # Get LLM analysis
+            analysis = self.llm_client.generate(
+                system_prompt=self.master_prompt,
+                user_prompt=user_prompt,
+                temperature=0.7,
+                response_format="json"
+            )
+
+            # Validate required fields
+            if not isinstance(analysis, dict) or 'agents' not in analysis:
+                raise ValueError("LLM response missing required 'agents' field")
+
+            # Convert LLM response to subtasks format
+            subtasks = []
+            for agent_spec in analysis.get('agents', []):
+                subtasks.append({
+                    "agent": agent_spec.get('name', 'echo'),
+                    "description": agent_spec.get('subtask', task_description),
+                    "context": {
+                        "type": agent_spec.get('name', 'echo'),
+                        "complexity": analysis.get('complexity', 5),
+                        "strategy": analysis.get('strategy', 'flat_delegation')
+                    },
+                    "priority": agent_spec.get('priority', 1),
+                    "tools": agent_spec.get('tools', config.allowed_tools)
+                })
+
+            # Sort by priority
+            subtasks.sort(key=lambda x: x.get('priority', 999))
+
+            # Store bridge information for later setup
+            self._planned_bridges = analysis.get('bridges', [])
+
+            return subtasks
+
+        except Exception as e:
+            # Fallback to simple decomposition if LLM fails
+            import logging
+            logging.warning(f"LLM decomposition failed: {e}. Using fallback.")
+            return [{
                 "agent": "echo",
                 "description": task_description,
-                "context": {"type": "simple_response"}
-            })
-
-        return subtasks
-
-    def _get_agent_action_verb(self, agent_name: str) -> str:
-        """
-        Get appropriate action verb for agent type.
-
-        :param agent_name: Name of the agent
-        :return: Action verb for task description
-        """
-        action_verbs = {
-            'coder': 'Implement the code for:',
-            'documenter': 'Create documentation for:',
-            'tester': 'Validate and test:',
-            'echo': 'Process:'
-        }
-        return action_verbs.get(agent_name, 'Process:')
+                "context": {"type": "simple_response"},
+                "priority": 1,
+                "tools": config.allowed_tools
+            }]
     
     def run(self, task_data: Dict) -> Dict:
         """

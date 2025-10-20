@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Coder Agent - MSP agent for code generation.
+Coder Agent - MSP agent for code generation using LLM.
 
-Generates code from templates based on task descriptions.
-Supports FastAPI application generation and Docker containerization.
+Generates production-ready code via LLM based on task descriptions.
+No templates or hardcoded keywords.
 """
 # Standard library imports
 import argparse
 import json
 import sys
 from pathlib import Path
+from typing import List
 
 # Add project root to path
 current_dir = Path(__file__).parent
@@ -20,100 +21,205 @@ sys.path.insert(0, str(project_root))
 from agent_contract import AgentContract
 from bridge import BridgeManager
 from src.fallbacks import get_fallback_config, get_timestamp
+from src.llm_client import create_llm_client_from_config
+import re
 
 config = get_fallback_config()
 
-try:
-    from src.template_loader import load_and_render_template
-except ImportError:
-    # Fallback if template loader not available
-    def load_and_render_template(template_name, variables):
-        raise ImportError("Template loader not available")
+# Load system prompt for coder agent
+def load_coder_prompt() -> str:
+    """Load coder agent system prompt"""
+    prompt_path = current_dir.parent.parent.parent / "prompts" / "coder_agent.txt"
+    try:
+        with open(prompt_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except (IOError, FileNotFoundError):
+        return "You are a senior software engineer. Generate production-ready code based on requirements."
 
 
 class CoderAgent(AgentContract):
     """
-    Agent responsible for code generation
+    Agent responsible for code generation using LLM
     """
 
     def __init__(self, scratchpad_path: Path, max_scratchpad_chars: int = None, bridge_manager=None):
         super().__init__(scratchpad_path, max_scratchpad_chars, bridge_manager)
+        self.llm_client = create_llm_client_from_config(config)
+        self.system_prompt = load_coder_prompt()
     
     def execute(self, task: dict, allowed_tools: list, clarification_endpoint: str = None) -> dict:
         """
-        Execute the coding task
+        Execute the coding task using LLM code generation
         :param task: Task description with context
         :param allowed_tools: List of allowed tools
         :param clarification_endpoint: Clarification endpoint URL
         :return: Result dictionary
         """
         task_description = task.get("description", "")
-        
+        feedback = task.get("feedback_from_tester", None)
+
         # Write initial status to scratchpad
-        self.scratchpad.append(f"[{get_timestamp()}] Coder Agent started\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Coder Agent started (LLM-driven)\n")
         self.scratchpad.append(f"[{get_timestamp()}] Task: {task_description}\n")
-        
+
+        if feedback:
+            self.scratchpad.append(f"[{get_timestamp()}] Feedback from tester: {feedback}\n")
+
         # Check for input from other agents via bridges
+        bridge_context = ""
         if self.bridge_manager:
-            # Look for specification from documenter agent
             doc_to_code_bridge = self.bridge_manager.get_bridge("documenter_to_coder")
             if doc_to_code_bridge:
                 spec_msg = doc_to_code_bridge.get_latest_message("api_specification")
                 if spec_msg:
-                    self.scratchpad.append(f"[{get_timestamp()}] Received API specification from documenter\n")
-                    api_spec = spec_msg.get("data", {})
-                    # Use the specification to guide code generation
-        
-        # Simulate analysis of the task
-        self.scratchpad.append(f"[{get_timestamp()}] Analyzing task requirements...\n")
-        import time
-        time.sleep(1)
-        
-        # Extract port from task description or use default
-        import re
-        port_match = re.search(r'\bport\s+(\d+)\b', task_description.lower())
-        if port_match:
-            extracted_port = port_match.group(1)
-            self.scratchpad.append(f"[{get_timestamp()}] Extracted port from task: {extracted_port}\n")
-        else:
-            # Port not explicitly mentioned - try to find any number that looks like a port
-            port_numbers = re.findall(r'\b(\d{4,5})\b', task_description)
-            valid_ports = [p for p in port_numbers if 1 <= int(p) <= 65535]
-            if valid_ports:
-                extracted_port = valid_ports[0]
-                self.scratchpad.append(f"[{get_timestamp()}] Found port number in task: {extracted_port}\n")
-            else:
-                # No port found - use default without asking
-                extracted_port = str(config.default_agent_port)
-                self.scratchpad.append(f"[{get_timestamp()}] No port specified, using default: {extracted_port}\n")
-        
-        # Generate code based on task
-        self.scratchpad.append(f"[{get_timestamp()}] Generating code...\n")
-        time.sleep(2)
-        
-        # Generate code based on task type
+                    self.scratchpad.append(f"[{get_timestamp()}] Received specification from documenter\n")
+                    bridge_context = f"\nSpecification from documenter:\n{spec_msg.get('data', {})}"
+
+        # Analyze task requirements
+        self.scratchpad.append(f"[{get_timestamp()}] Analyzing requirements via LLM...\n")
+
+        # Build LLM prompt
+        user_prompt = f"""
+Task: {task_description}
+{bridge_context}
+{"Feedback to address: " + feedback if feedback else ""}
+
+Generate production-ready code for this task. Include:
+1. All necessary files (main code, Dockerfile if containerization mentioned, etc.)
+2. Complete working implementations, not placeholders
+3. Proper error handling and validation
+4. Clear comments and documentation
+
+Output format: Markdown code blocks with filenames as comments.
+
+Example:
+```python
+# main.py
+<actual code here>
+```
+
+```dockerfile
+# Dockerfile
+<actual dockerfile here>
+```
+"""
+
+        try:
+            # Generate code via LLM
+            self.scratchpad.append(f"[{get_timestamp()}] Generating code via LLM...\n")
+
+            generated_content = self.llm_client.generate(
+                system_prompt=self.system_prompt,
+                user_prompt=user_prompt,
+                temperature=0.7,
+                max_tokens=4000
+            )
+
+            # Parse code blocks from LLM response
+            produced_files = self._parse_and_write_code_blocks(generated_content)
+
+            # Send API info to documenter if API endpoints were generated
+            if produced_files:
+                self._send_api_spec_to_documenter(generated_content)
+
+            self.scratchpad.append(f"[{get_timestamp()}] Code generation completed\n")
+            self.scratchpad.append(f"[{get_timestamp()}] Generated {len(produced_files)} files\n")
+
+            return {
+                "status": "success",
+                "result": {
+                    "message": "Code generated successfully via LLM",
+                    "files_created": produced_files
+                },
+                "produced_files": produced_files
+            }
+
+        except Exception as e:
+            error_msg = f"LLM code generation failed: {str(e)}"
+            self.scratchpad.append(f"[{get_timestamp()}] ERROR: {error_msg}\n")
+            return {
+                "status": "failed",
+                "error": error_msg
+            }
+
+    def _parse_and_write_code_blocks(self, llm_response: str) -> List[str]:
+        """
+        Parse code blocks from LLM response and write to files.
+
+        :param llm_response: LLM generated text with code blocks
+        :return: List of created file paths
+        """
         produced_files = []
 
-        if "fastapi" in task_description.lower():
-            main_py_path = self._generate_fastapi_code()
-            produced_files.append(str(main_py_path))
+        # Split response into code blocks
+        blocks = llm_response.split('```')
 
-        if "docker" in task_description.lower() or "container" in task_description.lower():
-            dockerfile_path = self._generate_dockerfile()
-            produced_files.append(str(dockerfile_path))
+        # Process blocks in pairs (odd indices are code, even are text)
+        for i in range(1, len(blocks), 2):
+            if i >= len(blocks):
+                break
 
-        self._send_api_spec_to_documenter()
+            block = blocks[i]
+            lines = block.split('\n')
 
-        self.scratchpad.append(f"[{get_timestamp()}] Code generation completed\n")
+            if len(lines) < 2:
+                continue
 
-        return {
-            "status": "success",
-            "result": {
-                "message": "Code generated successfully",
-                "files_created": produced_files
-            },
-            "produced_files": produced_files
+            # First line might be language identifier
+            first_line = lines[0].strip()
+            if first_line in ['python', 'dockerfile', 'yaml', 'json', 'bash', '']:
+                # Next line should be # filename
+                if len(lines) > 1 and lines[1].strip().startswith('#'):
+                    filename = lines[1].strip()[1:].strip()
+                    content = '\n'.join(lines[2:])
+                else:
+                    continue
+            elif first_line.startswith('#'):
+                # First line is # filename
+                filename = first_line[1:].strip()
+                content = '\n'.join(lines[1:])
+            else:
+                continue
+
+            # Write file
+            file_path = Path(self.scratchpad_path.parent) / filename
+            try:
+                self._write_file_safely(file_path, content, filename)
+                produced_files.append(str(file_path))
+            except (IOError, PermissionError) as e:
+                self.scratchpad.append(f"[{get_timestamp()}] Failed to write {filename}: {e}\n")
+
+        return produced_files
+
+    def _send_api_spec_to_documenter(self, generated_code: str = None):
+        """
+        Send API specification to documenter via bridge if available.
+        """
+        if not self.bridge_manager:
+            return
+
+        code_to_doc_bridge = self.bridge_manager.get_bridge("coder_to_documenter")
+        if not code_to_doc_bridge:
+            return
+
+        # Extract API endpoints from generated code
+        api_info = {
+            "endpoints": [],
+            "generated": True
         }
+
+        if generated_code:
+            # Simple regex to find FastAPI route decorators
+            route_pattern = r'@app\.(get|post|put|delete|patch)\(["\']([^"\']+)["\']\)'
+            matches = re.findall(route_pattern, generated_code)
+            for method, path in matches:
+                api_info["endpoints"].append({
+                    "method": method.upper(),
+                    "path": path
+                })
+
+        code_to_doc_bridge.send_message("coder", "api_specification", api_info)
+        self.scratchpad.append(f"[{get_timestamp()}] Sent API specification to documenter via bridge\n")
 
     def _write_file_safely(self, file_path: Path, content: str, file_description: str) -> bool:
         """
@@ -139,67 +245,6 @@ class CoderAgent(AgentContract):
             error_msg = f"Failed to write {file_description}: {str(e)}"
             self.scratchpad.append(f"[{get_timestamp()}] ERROR: {error_msg}\n")
             raise IOError(error_msg)
-
-    def _generate_fastapi_code(self) -> Path:
-        """
-        Generate FastAPI application code.
-
-        :return: Path to generated main.py file
-        """
-        try:
-            template_vars = {
-                "app_title": config.default_app_title,
-                "app_version": config.default_app_version,
-                "port": str(config.default_agent_port)
-            }
-            main_py_content = load_and_render_template("fastapi_main.py.template", template_vars)
-
-            main_py_path = Path(self.scratchpad_path.parent) / "main.py"
-            self._write_file_safely(main_py_path, main_py_content, "main.py")
-            return main_py_path
-        except (FileNotFoundError, IOError) as e:
-            error_msg = f"Failed to generate FastAPI code: {str(e)}"
-            self.scratchpad.append(f"[{get_timestamp()}] ERROR: {error_msg}\n")
-            raise IOError(error_msg) from e
-
-    def _generate_dockerfile(self) -> Path:
-        """
-        Generate Dockerfile for containerization.
-
-        :return: Path to generated Dockerfile
-        """
-        try:
-            template_vars = {"port": str(config.default_agent_port)}
-            dockerfile_content = load_and_render_template("Dockerfile.template", template_vars)
-
-            dockerfile_path = Path(self.scratchpad_path.parent) / "Dockerfile"
-            self._write_file_safely(dockerfile_path, dockerfile_content, "Dockerfile")
-            return dockerfile_path
-        except (FileNotFoundError, IOError) as e:
-            error_msg = f"Failed to generate Dockerfile: {str(e)}"
-            self.scratchpad.append(f"[{get_timestamp()}] ERROR: {error_msg}\n")
-            raise IOError(error_msg) from e
-
-    def _send_api_spec_to_documenter(self):
-        """
-        Send API specification to documenter via bridge if available.
-        """
-        if self.bridge_manager:
-            code_to_doc_bridge = self.bridge_manager.get_bridge("coder_to_documenter")
-            if code_to_doc_bridge:
-                # Send API specification or other relevant information to documenter
-                api_info = {
-                    "endpoints": [
-                        {"path": "/", "method": "GET", "description": "Root endpoint"},
-                        {"path": "/tasks", "method": "GET", "description": "Get all tasks"},
-                        {"path": "/tasks/{task_id}", "method": "GET", "description": "Get specific task"},
-                        {"path": "/tasks", "method": "POST", "description": "Create new task"},
-                        {"path": "/tasks/{task_id}", "method": "PUT", "description": "Update task"},
-                        {"path": "/tasks/{task_id}", "method": "DELETE", "description": "Delete task"}
-                    ]
-                }
-                code_to_doc_bridge.send_message("coder", "api_specification", api_info)
-                self.scratchpad.append(f"[{get_timestamp()}] Sent API specification to documenter via bridge\n")
 
 
 def main():
