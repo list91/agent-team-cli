@@ -409,6 +409,8 @@ class MasterOrchestrator:
         
         # Run subtasks
         results = []
+        all_produced_files = []
+        
         for i, subtask in enumerate(subtasks):
             agent_name = subtask["agent"]
             agent_task = {
@@ -447,8 +449,129 @@ class MasterOrchestrator:
                         allowed_tools=["file_read", "file_write", "shell"],
                         clarification_endpoint=clarification_endpoint
                     )
+                    results[-1] = result  # Update the result in the list
             
             master_scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Sub-agent {agent_name} completed with status: {result['status']}\n")
+            
+            # Collect produced files
+            if "produced_files" in result:
+                all_produced_files.extend(result["produced_files"])
+        
+        # Run tester agent to validate results of other agents
+        tester_needed = len([r for r in results if r['status'] == 'success']) > 0  # Only run tester if at least one agent succeeded
+        if tester_needed and all_produced_files:
+            master_scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Running tester agent to validate results...\n")
+            
+            # Create task for tester
+            tester_task = {
+                "description": task_description,
+                "produced_files": all_produced_files,
+                "context_from_producers": {},
+                "context": {
+                    "validation_level": "standard"  # Could be adjusted based on task requirements
+                }
+            }
+            
+            # Create scratchpad for tester
+            tester_scratchpad_path = workdir / "tester.scratchpad.md"
+            
+            tester_result = self.run_agent(
+                agent_name="tester",
+                task=tester_task,
+                scratchpad_path=tester_scratchpad_path,
+                allowed_tools=["file_read", "shell"],  # Tester should not write files
+                clarification_endpoint=clarification_endpoint
+            )
+            
+            master_scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Tester agent completed with status: {tester_result['status']}\n")
+            
+            # If tester found issues, consider if we need to rerun some agents
+            if tester_result.get("status") == "failed":
+                issues = tester_result.get("result", {}).get("issues", [])
+                suggested_fixes = tester_result.get("result", {}).get("suggested_fixes", [])
+                
+                master_scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Tester found {len(issues)} issues. Suggested fixes: {len(suggested_fixes)}\n")
+                
+                # Log the suggested fixes
+                for fix in suggested_fixes:
+                    agent_to_fix = fix.get('agent', 'unknown')
+                    suggestion = fix.get('suggestion', 'no details')
+                    master_scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Suggested fix for {agent_to_fix}: {suggestion}\n")
+                    
+                    # In this implementation, we'll identify which original subtasks were for this agent
+                    # and rerun them with the feedback
+                    for j, subtask in enumerate(subtasks):
+                        if subtask['agent'] == agent_to_fix:
+                            master_scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Rerunning {agent_to_fix} with feedback...\n")
+                            
+                            # Create updated task with feedback
+                            updated_task = {
+                                "description": subtask["description"],
+                                "context": subtask["context"],
+                                "feedback_from_tester": suggestion
+                            }
+                            
+                            # Create a new scratchpad for this rerun
+                            rerun_scratchpad_path = workdir / f"{agent_to_fix}_rerun_{j}.scratchpad.md"
+                            
+                            # Rerun the agent with feedback
+                            rerun_result = self.run_agent(
+                                agent_name=agent_to_fix,
+                                task=updated_task,
+                                scratchpad_path=rerun_scratchpad_path,
+                                allowed_tools=["file_read", "file_write", "shell"],
+                                clarification_endpoint=clarification_endpoint
+                            )
+                            
+                            # Replace the original result with the rerun result
+                            for idx, res in enumerate(results):
+                                if idx < len(subtasks) and subtasks[idx]["agent"] == agent_to_fix:
+                                    results[idx] = rerun_result
+                                    break
+                            
+                            master_scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Rerun of {agent_to_fix} completed with status: {rerun_result['status']}\n")
+                
+                # After potential reruns, run tester again to validate the fixes
+                master_scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Running tester again after fixes...\n")
+                
+                # Collect files again after reruns
+                rerun_produced_files = []
+                for result in results:
+                    if "produced_files" in result:
+                        rerun_produced_files.extend(result["produced_files"])
+                
+                if rerun_produced_files:
+                    final_tester_task = {
+                        "description": task_description,
+                        "produced_files": rerun_produced_files,
+                        "context_from_producers": {},
+                        "context": {
+                            "validation_level": "standard"
+                        }
+                    }
+                    
+                    final_tester_scratchpad_path = workdir / "final_tester.scratchpad.md"
+                    
+                    final_tester_result = self.run_agent(
+                        agent_name="tester",
+                        task=final_tester_task,
+                        scratchpad_path=final_tester_scratchpad_path,
+                        allowed_tools=["file_read", "shell"],
+                        clarification_endpoint=clarification_endpoint
+                    )
+                    
+                    master_scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Final tester validation completed with status: {final_tester_result['status']}\n")
+                    
+                    # Update results with final tester result
+                    if final_tester_result['status'] == 'success':
+                        results.append(final_tester_result)
+                    else:
+                        # Even if final tester fails, we still add it to results for reporting
+                        results.append(final_tester_result)
+            else:
+                # Tester passed, add tester result to results
+                results.append(tester_result)
+                master_scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Tester validation passed\n")
         
         # Process any remaining clarifications
         self.process_clarifications()
