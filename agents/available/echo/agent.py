@@ -15,6 +15,12 @@ sys.path.insert(0, str(project_root))
 
 from scratchpad import Scratchpad
 
+try:
+    from src.utils import get_timestamp
+except ImportError:
+    def get_timestamp():
+        return time.strftime('%H:%M:%S')
+
 
 def main():
     parser = argparse.ArgumentParser(description="Echo Agent - MSP Test Agent")
@@ -34,16 +40,16 @@ def main():
     scratchpad = Scratchpad(Path(args.scratchpad_path), max_chars=args.max_scratchpad_chars)
     
     # Write initial status to scratchpad
-    scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Echo Agent started\n")
-    scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Task: {description}\n")
+    scratchpad.append(f"[{get_timestamp()}] Echo Agent started\n")
+    scratchpad.append(f"[{get_timestamp()}] Task: {description}\n")
     
     # Simulate some work
-    scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Processing task...\n")
+    scratchpad.append(f"[{get_timestamp()}] Processing task...\n")
     time.sleep(1)
     
     # Write response to scratchpad
     response = f"Echo: {description}"
-    scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Response: {response}\n")
+    scratchpad.append(f"[{get_timestamp()}] Response: {response}\n")
     
     # Prepare result
     result = {

@@ -2,21 +2,38 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 import json
+import sys
+
+# Add project root to path
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
+try:
+    from src.config_loader import config
+except ImportError:
+    # Fallback if config loader not available
+    class FallbackConfig:
+        @property
+        def max_scratchpad_chars(self):
+            return 8192
+    config = FallbackConfig()
 
 
 class AgentContract(ABC):
     """
     Abstract base class defining the contract that all MSP agents must implement.
     """
-    
-    def __init__(self, scratchpad_path: Path, max_scratchpad_chars: int = 8192, bridge_manager=None):
+
+    def __init__(self, scratchpad_path: Path, max_scratchpad_chars: int = None, bridge_manager=None):
         """
         Initialize the agent with a scratchpad.
         :param scratchpad_path: Path to the agent's scratchpad file
-        :param max_scratchpad_chars: Maximum number of characters in scratchpad
+        :param max_scratchpad_chars: Maximum number of characters in scratchpad (default from config)
         :param bridge_manager: Optional bridge manager for inter-agent communication
         """
         from scratchpad import Scratchpad
+        if max_scratchpad_chars is None:
+            max_scratchpad_chars = config.max_scratchpad_chars
         self.scratchpad = Scratchpad(scratchpad_path, max_chars=max_scratchpad_chars)
         self.scratchpad_path = scratchpad_path
         self.max_scratchpad_chars = max_scratchpad_chars

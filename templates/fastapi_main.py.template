@@ -1,0 +1,58 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import Optional, List
+import uvicorn
+
+app = FastAPI(title="{app_title}", version="{app_version}")
+
+# Data model
+class Task(BaseModel):
+    id: Optional[int] = None
+    title: str
+    description: str
+    completed: bool = False
+
+# In-memory storage (for demo purposes)
+tasks_db = []
+next_id = 1
+
+@app.get("/")
+def read_root():
+    return {{"message": "{app_title}"}}
+
+@app.get("/tasks", response_model=List[Task])
+def get_tasks():
+    return tasks_db
+
+@app.get("/tasks/{{task_id}}", response_model=Task)
+def get_task(task_id: int):
+    for task in tasks_db:
+        if task.id == task_id:
+            return task
+    return {{"error": "Task not found"}}
+
+@app.post("/tasks", response_model=Task)
+def create_task(task: Task):
+    global next_id
+    task.id = next_id
+    next_id += 1
+    tasks_db.append(task)
+    return task
+
+@app.put("/tasks/{{task_id}}", response_model=Task)
+def update_task(task_id: int, task_update: Task):
+    for i, task in enumerate(tasks_db):
+        if task.id == task_id:
+            updated_task = task_update.copy(update={{"id": task_id}})
+            tasks_db[i] = updated_task
+            return updated_task
+    return {{"error": "Task not found"}}
+
+@app.delete("/tasks/{{task_id}}")
+def delete_task(task_id: int):
+    global tasks_db
+    tasks_db = [task for task in tasks_db if task.id != task_id]
+    return {{"message": "Task deleted"}}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port={port})

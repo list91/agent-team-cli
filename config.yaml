@@ -1,8 +1,32 @@
 # Global configuration for MSP Orchestrator
 version: 1.0
+
+# Scratchpad settings
 default_max_scratchpad_chars: 8192
+
+# Tool permissions
 default_allowed_tools:
   - file_read
   - file_write
   - shell
+
+# Logging
 log_level: INFO
+log_format: "[%(asctime)s] %(levelname)s - %(name)s - %(message)s"
+
+# Network settings
+clarification_server_port_range:
+  min: 8000
+  max: 9000
+
+default_agent_port: 8000
+
+# Agent execution
+agent_timeout_seconds: 300
+
+# Validation
+default_validation_level: standard
+
+# Status monitoring
+enable_status_display: true
+status_refresh_seconds: 2

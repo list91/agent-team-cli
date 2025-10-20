@@ -41,6 +41,8 @@ venv.bak/
 .venv/
 .env/
 
+nul
+
 # IDEs
 .vscode/
 .idea/

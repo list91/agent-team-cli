@@ -19,13 +19,26 @@ sys.path.insert(0, str(project_root))
 
 from agent_contract import AgentContract
 
+try:
+    from src.config_loader import config
+    from src.utils import get_timestamp
+except ImportError:
+    # Fallback if config loader not available
+    class FallbackConfig:
+        @property
+        def max_scratchpad_chars(self):
+            return 8192
+    config = FallbackConfig()
+    def get_timestamp():
+        return time.strftime('%H:%M:%S')
+
 
 class TesterAgent(AgentContract):
     """
     Agent responsible for validating results of other agents
     """
-    
-    def __init__(self, scratchpad_path: Path, max_scratchpad_chars: int = 8192, bridge_manager=None):
+
+    def __init__(self, scratchpad_path: Path, max_scratchpad_chars: int = None, bridge_manager=None):
         super().__init__(scratchpad_path, max_scratchpad_chars, bridge_manager)
         self.validation_results = {}
 
@@ -43,13 +56,13 @@ class TesterAgent(AgentContract):
         validation_level = task.get("context", {}).get("validation_level", "standard")
 
         # Write initial status to scratchpad
-        self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Tester Agent started\n")
-        self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Validating files: {produced_files}\n")
-        self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Validation level: {validation_level}\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Tester Agent started\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Validating files: {produced_files}\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Validation level: {validation_level}\n")
         
         # Analyze original request to form validation criteria
         validation_criteria = self._form_validation_criteria(original_request, context_from_producers)
-        self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Formed validation criteria: {list(validation_criteria.keys())}\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Formed validation criteria: {list(validation_criteria.keys())}\n")
         
         # Validate each artifact
         issues = []
@@ -61,7 +74,7 @@ class TesterAgent(AgentContract):
                 issues.append(f"File does not exist: {file_path}")
                 continue
                 
-            self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Validating {file_path.name}...\n")
+            self.scratchpad.append(f"[{get_timestamp()}] Validating {file_path.name}...\n")
             
             # Perform validation based on file type and validation level
             file_issues = self._validate_file(file_path, validation_criteria, validation_level, allowed_tools)
@@ -87,9 +100,9 @@ class TesterAgent(AgentContract):
         if issues:
             result["suggested_fixes"] = self._suggest_fixes(issues, produced_files)
         
-        self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Validation completed. Quality score: {quality_score}\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Validation completed. Quality score: {quality_score}\n")
         if issues:
-            self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Found {len(issues)} issues\n")
+            self.scratchpad.append(f"[{get_timestamp()}] Found {len(issues)} issues\n")
         
         return {
             "status": "failed" if issues else "success",
@@ -138,7 +151,19 @@ class TesterAgent(AgentContract):
         :return: List of issues found
         """
         issues = []
-        content = file_path.read_text()
+
+        # Try to read file with error handling
+        try:
+            content = file_path.read_text(encoding='utf-8')
+        except (IOError, PermissionError) as e:
+            issues.append(f"Cannot read file {file_path.name}: Permission denied or I/O error")
+            return issues
+        except UnicodeDecodeError as e:
+            issues.append(f"File {file_path.name} contains invalid UTF-8 encoding")
+            return issues
+        except Exception as e:
+            issues.append(f"Error reading file {file_path.name}: {str(e)}")
+            return issues
         
         # Basic validation - check file exists and has content
         if not content.strip():
@@ -173,25 +198,37 @@ class TesterAgent(AgentContract):
         
         # Basic syntax check if shell is allowed
         if "shell" in allowed_tools:
+            tmp_path = None
             try:
                 # Create a temporary file to check syntax
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as tmp:
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as tmp:
                     tmp.write(content)
                     tmp_path = tmp.name
-                
+
                 # Run syntax check using Python
-                result = subprocess.run([sys.executable, "-m", "py_compile", tmp_path], 
+                result = subprocess.run([sys.executable, "-m", "py_compile", tmp_path],
                                       capture_output=True, text=True, timeout=10)
-                
+
                 if result.returncode != 0:
                     issues.append(f"Python syntax error in {file_path.name}: {result.stderr}")
-                
-                # Clean up
-                os.unlink(tmp_path)
+
             except subprocess.TimeoutExpired:
-                issues.append(f"Python syntax check timed out for {file_path.name}")
+                issues.append(f"Python syntax check timeout for {file_path.name}")
+            except FileNotFoundError:
+                issues.append(f"Python interpreter not found for syntax check of {file_path.name}")
+            except PermissionError as e:
+                issues.append(f"Permission denied during syntax check of {file_path.name}")
+            except (IOError, OSError) as e:
+                issues.append(f"I/O error during syntax check of {file_path.name}: {str(e)}")
             except Exception as e:
                 issues.append(f"Error during syntax check of {file_path.name}: {str(e)}")
+            finally:
+                # Always clean up temp file
+                if tmp_path and os.path.exists(tmp_path):
+                    try:
+                        os.unlink(tmp_path)
+                    except:
+                        pass  # Ignore cleanup errors
         else:
             # If shell is not allowed, do basic checks
             if criteria.get("has_fastapi_import") and "from fastapi" not in content and "import fastapi" not in content:
@@ -239,15 +276,22 @@ class TesterAgent(AgentContract):
         Validate YAML file
         """
         issues = []
-        
+
         try:
             import yaml
+        except ImportError:
+            issues.append(f"Cannot validate YAML file {file_path.name}: yaml module not installed")
+            return issues
+
+        try:
             parsed = yaml.safe_load(content)
             if parsed is None:
                 issues.append(f"YAML file {file_path.name} is empty or invalid")
-        except Exception as e:
+        except yaml.YAMLError as e:
             issues.append(f"YAML file {file_path.name} has parsing errors: {str(e)}")
-        
+        except Exception as e:
+            issues.append(f"Unexpected error parsing YAML file {file_path.name}: {str(e)}")
+
         return issues
     
     def _suggest_fixes(self, issues: List[str], produced_files: List[str]) -> List[Dict[str, Any]]:
@@ -280,7 +324,7 @@ def main():
     parser = argparse.ArgumentParser(description="Tester Agent - MSP Validation Agent")
     parser.add_argument("--task", required=True, help="Task JSON string")
     parser.add_argument("--scratchpad-path", required=True, help="Path to scratchpad file")
-    parser.add_argument("--max-scratchpad-chars", type=int, default=8192, help="Max scratchpad characters")
+    parser.add_argument("--max-scratchpad-chars", type=int, default=config.max_scratchpad_chars, help="Max scratchpad characters")
     parser.add_argument("--allowed-tools", default="", help="Comma-separated list of allowed tools")
     parser.add_argument("--clarification-endpoint", help="HTTP endpoint for clarification requests")
     

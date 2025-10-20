@@ -16,13 +16,33 @@ sys.path.insert(0, str(project_root))
 from agent_contract import AgentContract
 from bridge import BridgeManager
 
+try:
+    from src.config_loader import config
+except ImportError:
+    # Fallback if config loader not available
+    class FallbackConfig:
+        @property
+        def max_scratchpad_chars(self):
+            return 8192
+    config = FallbackConfig()
+
+try:
+    from src.template_loader import load_and_render_template
+    from src.utils import get_timestamp
+except ImportError:
+    # Fallback if template loader not available
+    def load_and_render_template(template_name, variables):
+        raise ImportError("Template loader not available")
+    def get_timestamp():
+        return time.strftime('%H:%M:%S')
+
 
 class DocumenterAgent(AgentContract):
     """
     Agent responsible for documentation generation
     """
-    
-    def __init__(self, scratchpad_path: Path, max_scratchpad_chars: int = 8192, bridge_manager=None):
+
+    def __init__(self, scratchpad_path: Path, max_scratchpad_chars: int = None, bridge_manager=None):
         super().__init__(scratchpad_path, max_scratchpad_chars, bridge_manager)
     
     def execute(self, task: dict, allowed_tools: list, clarification_endpoint: str = None) -> dict:
@@ -36,8 +56,8 @@ class DocumenterAgent(AgentContract):
         task_description = task.get("description", "")
         
         # Write initial status to scratchpad
-        self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Documenter Agent started\n")
-        self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Task: {task_description}\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Documenter Agent started\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Task: {task_description}\n")
         
         # Check for input from other agents via bridges
         if self.bridge_manager:
@@ -46,82 +66,40 @@ class DocumenterAgent(AgentContract):
             if code_to_doc_bridge:
                 api_info_msg = code_to_doc_bridge.get_latest_message("api_specification")
                 if api_info_msg:
-                    self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Received API information from coder\n")
+                    self.scratchpad.append(f"[{get_timestamp()}] Received API information from coder\n")
                     api_info = api_info_msg.get("data", {})
                     # Use the API information to improve documentation generation
         
         # Simulate analysis of the task
-        self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Analyzing documentation requirements...\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Analyzing documentation requirements...\n")
         time.sleep(1)
         
         # Generate documentation based on task
-        self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Generating documentation...\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Generating documentation...\n")
         time.sleep(2)
         
         # Determine what type of documentation to generate based on task
         produced_files = []
         
         if "fastapi" in task_description.lower() or "api" in task_description.lower():
-            # Generate README.md
-            readme_content = f'''# Task Management API
-
-This is a REST API for managing tasks built with FastAPI.
-
-## Features
-- Create, Read, Update, and Delete (CRUD) operations for tasks
-- FastAPI automatic documentation at `/docs`
-- Pydantic model validation
-
-## Endpoints
-
-- `GET /` - Root endpoint
-- `GET /tasks` - Get all tasks
-- `GET /tasks/{{task_id}}` - Get a specific task
-- `POST /tasks` - Create a new task
-- `PUT /tasks/{{task_id}}` - Update a specific task
-- `DELETE /tasks/{{task_id}}` - Delete a specific task
-
-## Technologies Used
-- FastAPI
-- Pydantic
-- Uvicorn (ASGI server)
-
-## Running the Application
-
-### Prerequisites
-- Python 3.10+
-- pip
-
-### Installation
-1. Install dependencies: `pip install -r requirements.txt`
-2. Run the application: `python main.py`
-
-The API will be available at `http://localhost:8000`.
-
-### Docker
-Build and run with Docker:
-```
-docker build -t task-api .
-docker run -p 8000:8000 task-api
-```
-
-## API Documentation
-Auto-generated documentation is available at:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-## License
-MIT
-'''
+            # Generate README.md using template
+            template_vars = {
+                "app_title": "Task Management API",
+                "port": "8000"
+            }
+            readme_content = load_and_render_template("README.md.template", template_vars)
             
             # Write the README
             readme_path = Path(self.scratchpad_path.parent) / "README.md"
-            with open(readme_path, 'w') as f:
-                f.write(readme_content)
-            
-            produced_files.append(str(readme_path))
-            
-            self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Generated README.md\n")
+            try:
+                with open(readme_path, 'w', encoding='utf-8') as f:
+                    f.write(readme_content)
+                produced_files.append(str(readme_path))
+                self.scratchpad.append(f"[{get_timestamp()}] Generated README.md\n")
+            except (IOError, PermissionError, OSError) as e:
+                error_msg = f"Failed to write README.md: {str(e)}"
+                self.scratchpad.append(f"[{get_timestamp()}] ERROR: {error_msg}\n")
+                raise IOError(error_msg)
         
         if "openapi" in task_description.lower() or "documentation" in task_description.lower():
             # Generate OpenAPI specification
@@ -299,13 +277,20 @@ MIT
             
             # Write the OpenAPI spec
             openapi_path = Path(self.scratchpad_path.parent) / "openapi.yaml"
-            import yaml
-            with open(openapi_path, 'w') as f:
-                yaml.dump(openapi_spec, f, default_flow_style=False)
-            
-            produced_files.append(str(openapi_path))
-            
-            self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Generated openapi.yaml\n")
+            try:
+                import yaml
+                with open(openapi_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(openapi_spec, f, default_flow_style=False)
+                produced_files.append(str(openapi_path))
+                self.scratchpad.append(f"[{get_timestamp()}] Generated openapi.yaml\n")
+            except (IOError, PermissionError, OSError) as e:
+                error_msg = f"Failed to write openapi.yaml: {str(e)}"
+                self.scratchpad.append(f"[{get_timestamp()}] ERROR: {error_msg}\n")
+                raise IOError(error_msg)
+            except ImportError as e:
+                error_msg = f"Failed to import yaml module: {str(e)}"
+                self.scratchpad.append(f"[{get_timestamp()}] ERROR: {error_msg}\n")
+                raise ImportError(error_msg)
         
         # Send documentation information to other agents via bridges
         if self.bridge_manager:
@@ -317,10 +302,10 @@ MIT
                     "standards": ["Markdown", "OpenAPI 3.0"]
                 }
                 doc_to_code_bridge.send_message("documenter", "api_specification", doc_spec)
-                self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Sent documentation requirements to coder via bridge\n")
+                self.scratchpad.append(f"[{get_timestamp()}] Sent documentation requirements to coder via bridge\n")
         
         # Complete the task
-        self.scratchpad.append(f"[{time.strftime('%H:%M:%S')}] Documentation generation completed\n")
+        self.scratchpad.append(f"[{get_timestamp()}] Documentation generation completed\n")
         
         return {
             "status": "success",
@@ -336,7 +321,7 @@ def main():
     parser = argparse.ArgumentParser(description="Documenter Agent - MSP Documentation Generation Agent")
     parser.add_argument("--task", required=True, help="Task JSON string")
     parser.add_argument("--scratchpad-path", required=True, help="Path to scratchpad file")
-    parser.add_argument("--max-scratchpad-chars", type=int, default=8192, help="Max scratchpad characters")
+    parser.add_argument("--max-scratchpad-chars", type=int, default=config.max_scratchpad_chars, help="Max scratchpad characters")
     parser.add_argument("--allowed-tools", default="", help="Comma-separated list of allowed tools")
     parser.add_argument("--clarification-endpoint", help="HTTP endpoint for clarification requests")
     
