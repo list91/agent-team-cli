@@ -1,0 +1,82 @@
+Для выполнения этой задачи, я создам необходимые файлы для установки `vault-cli` и настрою pre-commit hook, чтобы запретить коммиты файлов `.env`.
+
+### Шаги:
+
+1. **Создать `setup.py`**: Этот файл будет использоваться для установки пакета через `pip`.
+2. **Создать `pyproject.toml`**: Этот файл будет содержать метаданные проекта и зависимости.
+3. **Настроить pre-commit hook**: Запретить коммиты файлов `.env`.
+
+Давайте начнем с создания файлов.
+
+#### 1. Создание `setup.py`
+
+```python
+from setuptools import setup, find_packages
+
+setup(
+    name='vault-cli',
+    version='0.1.0',
+    packages=find_packages(),
+    install_requires=[
+        # Укажите зависимости, если они есть
+    ],
+    entry_points={
+        'console_scripts': [
+            'vault-cli=vault_cli:main',  # Предполагается, что main — это точка входа
+        ],
+    },
+    classifiers=[
+        'Programming Language :: Python :: 3',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+    ],
+    python_requires='>=3.6',
+)
+```
+
+#### 2. Создание `pyproject.toml`
+
+```toml
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.vault-cli]
+# Здесь можно добавить конфигурации для vault-cli, если они требуются
+```
+
+#### 3. Настройка pre-commit hook
+
+Создадим файл `.pre-commit-config.yaml` для настройки pre-commit hook.
+
+```yaml
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1  # Используйте последнюю стабильную версию
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: forbid-binary
+      - id: no-commit-to-branch
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: local
+    hooks:
+      - id: forbid-env-files
+        name: "Forbid .env files"
+        entry: bash -c '! git diff --cached --name-only | grep -E "\.env$"'
+        language: system
+        files: ''
+```
+
+Теперь запишем эти файлы в директорию `./workspace/task6_detailed/`.
+
+```python
+file_writer.write('./workspace/task6_detailed/setup.py', setup_py_content)
+file_writer.write('./workspace/task6_detailed/pyproject.toml', pyproject_toml_content)
+file_writer.write('./workspace/task6_detailed/.pre-commit-config.yaml', pre_commit_config_content)
+```
+
+Записываю файлы...

@@ -1,0 +1,59 @@
+Для создания Docker-образа с предустановленными инструментами профилирования, мы создадим Dockerfile, который будет включать необходимые инструменты. Обычно, такие инструменты могут включать `perf`, `strace`, `gdb`, и другие. Мы будем использовать базовый образ Ubuntu для этого.
+
+Давайте создадим Dockerfile:
+
+```dockerfile
+# Используем официальный образ Ubuntu в качестве базового
+FROM ubuntu:latest
+
+# Обновляем пакеты и устанавливаем инструменты профилирования
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    gdb \
+    strace \
+    perf-tools-unstable \
+    lsof \
+    && apt-get clean
+
+# Устанавливаем рабочую директорию
+WORKDIR /workspace
+
+# Устанавливаем переменную окружения для неинтерактивного режима
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Устанавливаем точку входа
+CMD ["/bin/bash"]
+```
+
+Теперь запишем этот Dockerfile в файл.
+
+```python
+dockerfile_content = """
+# Используем официальный образ Ubuntu в качестве базового
+FROM ubuntu:latest
+
+# Обновляем пакеты и устанавливаем инструменты профилирования
+RUN apt-get update && \\
+    apt-get install -y \\
+    build-essential \\
+    gdb \\
+    strace \\
+    perf-tools-unstable \\
+    lsof \\
+    && apt-get clean
+
+# Устанавливаем рабочую директорию
+WORKDIR /workspace
+
+# Устанавливаем переменную окружения для неинтерактивного режима
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Устанавливаем точку входа
+CMD ["/bin/bash"]
+"""
+
+file_writer.write('./workspace/task7_detailed/Dockerfile', dockerfile_content)
+```
+
+Этот Dockerfile создаст образ с предустановленными инструментами профилирования. Вы можете построить образ с помощью команды `docker build -t profiling-tools .` в директории, где находится Dockerfile.
