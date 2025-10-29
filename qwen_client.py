@@ -5,6 +5,7 @@
 """
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -12,6 +13,104 @@ import uuid
 import threading
 from datetime import datetime
 from pathlib import Path
+
+
+def ensure_config() -> Path:
+    """
+    Проверяет наличие конфига, создаёт дефолтный если не существует.
+
+    Returns:
+        Путь к config/qwen_client.json
+    """
+    config_dir = Path("config")
+    config_dir.mkdir(exist_ok=True)
+
+    config_path = config_dir / "qwen_client.json"
+
+    if not config_path.exists():
+        default_config = {
+            "id": "qwen_agent",
+            "role": "sub_agent",
+            "is_master": False,
+            "prompts": [
+                {
+                    "type": "system",
+                    "prompt": (
+                        "Ты — агент для выполнения задач.\n\n"
+                        "ВАЖНО: Ты работаешь в изолированной директории agents-space/run_*/ "
+                        "В этой директории находится файл scratchpad.md — твоя рабочая память.\n\n"
+                        "ПРАВИЛА РАБОТЫ СО SCRATCHPAD:\n"
+                        "1. ВСЕГДА веди scratchpad.md — записывай туда ход своих мыслей, план, прогресс\n"
+                        "2. Формат записи: добавляй новые строки в конец файла\n"
+                        "3. Используй scratchpad для:\n"
+                        "   - Планирования задачи (разбивка на шаги)\n"
+                        "   - Отслеживания прогресса (какие шаги выполнены)\n"
+                        "   - Записи промежуточных результатов\n"
+                        "   - Анализа ошибок и решений\n"
+                        "4. Пиши в scratchpad на русском или английском\n"
+                        "5. Используй markdown для структурирования\n\n"
+                        "Пример scratchpad.md:\n"
+                        "```\n"
+                        "## Задача\n"
+                        "Создать 3 файла с настройками\n\n"
+                        "## План\n"
+                        "- [ ] config.json\n"
+                        "- [ ] users.txt\n"
+                        "- [ ] README.md\n\n"
+                        "## Прогресс\n"
+                        "[14:30] Начинаю с config.json...\n"
+                        "[14:31] config.json создан, перехожу к users.txt\n"
+                        "```\n\n"
+                        "Все создаваемые файлы пиши только в текущую директорию (agents-space/run_*/)."
+                    )
+                }
+            ],
+            "execution": {
+                "allowed_tools": ["*"],
+                "max_execution_time_sec": 120,
+                "max_retries": 2
+            },
+            "scratchpad": {
+                "enabled": True,
+                "max_chars": 16384
+            },
+            "global_memory": False,
+            "can_request_clarification": True,
+            "metadata": {
+                "version": "1.0",
+                "author": "system",
+                "created_at": datetime.now().strftime("%Y-%m-%d"),
+                "description": "Дефолтный агент для qwen_client"
+            }
+        }
+
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(default_config, f, indent=4, ensure_ascii=False)
+
+    return config_path
+
+
+def load_system_prompt() -> str:
+    """
+    Загружает system prompt из конфига.
+
+    Returns:
+        Текст system prompt (или пустая строка если не найден)
+    """
+    try:
+        config_path = ensure_config()
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        prompts = config.get("prompts", [])
+        for prompt_obj in prompts:
+            if prompt_obj.get("type") == "system":
+                return prompt_obj.get("prompt", "")
+
+        return ""
+    except Exception as e:
+        print(f"[WARNING] Не удалось загрузить system prompt из конфига: {e}", file=sys.stderr)
+        return ""
 
 
 def log_to_scratchpad(scratchpad_path: Path, message: str, status: str = "~") -> None:
@@ -45,9 +144,10 @@ def create_workspace() -> tuple[Path, Path, Path]:
     workdir = base_dir / run_id
     workdir.mkdir(parents=True, exist_ok=True)
 
-    # Создаём scratchpad.md (абсолютный путь)
+    # Создаём scratchpad.md с шаблоном (абсолютный путь)
     scratchpad_path = (workdir / "scratchpad.md").resolve()
-    scratchpad_path.touch()
+    with open(scratchpad_path, "w", encoding="utf-8") as f:
+        f.write("# Scratchpad\n\n## Задача\n\n## План\n\n## Прогресс\n\n")
 
     # Создаём live.log (абсолютный путь)
     live_log_path = (workdir / "live.log").resolve()
@@ -85,7 +185,7 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
     Запускает qwen в изолированной рабочей директории с реал-тайм выводом.
 
     Args:
-        prompt: Промпт для qwen
+        prompt: Промпт пользователя для qwen
         workdir: Рабочая директория
         scratchpad_path: Путь к scratchpad.md
         live_log_path: Путь к live.log
@@ -95,9 +195,20 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
     Returns:
         Exit code (0=успех, 1=ошибка)
     """
+    # Загружаем system prompt из конфига
+    system_prompt = load_system_prompt()
+
+    # Формируем полный промпт: system + user
+    if system_prompt:
+        full_prompt = f"{system_prompt}\n\n{'='*60}\n\n# ЗАДАЧА ОТ ПОЛЬЗОВАТЕЛЯ:\n\n{prompt}\n\n{'='*60}\n\nНАЧНИ ВЫПОЛНЕНИЕ ЗАДАЧИ СЕЙЧАС."
+    else:
+        full_prompt = prompt
+
     # Логируем начало работы
     log_to_scratchpad(scratchpad_path, f"Запуск задачи: \"{prompt}\"")
     log_to_scratchpad(scratchpad_path, f"Рабочая директория: {workdir}")
+    if system_prompt:
+        log_to_scratchpad(scratchpad_path, "System prompt загружен из config/qwen_client.json")
 
     # Сохраняем текущую директорию
     original_cwd = os.getcwd()
@@ -107,8 +218,8 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
         os.chdir(workdir)
         log_to_scratchpad(scratchpad_path, f"Сменена рабочая директория: {os.getcwd()}")
 
-        # Формируем команду для qwen
-        cmd = ["qwen", prompt]
+        # Формируем команду для qwen (БЕЗ промпта в аргументах - передадим через stdin)
+        cmd = ["qwen"]
 
         if allowed_tools:
             cmd.append("--allowed-tools")
@@ -116,12 +227,13 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
         if yolo:
             cmd.extend(["--yolo", yolo])
 
-        log_to_scratchpad(scratchpad_path, f"Выполнение команды: {' '.join(cmd)}")
+        log_to_scratchpad(scratchpad_path, f"Выполнение команды: {' '.join(cmd)} (промпт через stdin)")
         log_to_scratchpad(scratchpad_path, f"Live лог: {live_log_path}")
 
-        # Запускаем qwen с реал-тайм выводом
+        # Запускаем qwen с реал-тайм выводом, передаём промпт через stdin
         process = subprocess.Popen(
             cmd,
+            stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -130,6 +242,10 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
             shell=True,
             cwd=workdir
         )
+
+        # Отправляем full_prompt в stdin и закрываем его
+        process.stdin.write(full_prompt)
+        process.stdin.close()
 
         # Создаём потоки для чтения stdout и stderr
         stdout_thread = threading.Thread(

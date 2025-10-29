@@ -1,29 +1,30 @@
 {
-    "id": "tr734821",
+    "id": "qwen_agent",
     "role": "sub_agent",
     "is_master": false,
     "prompts": [
         {
             "type": "system",
-            "prompt": ""
+            "prompt": "ТЫ ОБЯЗАН использовать scratchpad.md как рабочую память.\n\nПРОЦЕСС:\n1. Прочитай scratchpad.md\n2. Запиши туда план:\n## Задача\n<описание>\n\n## План\n[ ] Шаг 1\n[ ] Шаг 2\n\n## Прогресс\n<записи с действиями>\n\n3. ПОСЛЕ КАЖДОГО действия обновляй Прогресс:\n[14:30] Создаю file1.txt...\n[14:31] [X] file1.txt создан\n\n4. Отмечай в Плане: [X] сделано, [~] делаю\n5. Файлы ТОЛЬКО в текущей директории\n6. Пиши на русском"
         }
     ],
     "execution": {
-        "allowed_tools": ["*"],
+        "allowed_tools": [
+            "*"
+        ],
         "max_execution_time_sec": 120,
         "max_retries": 2
     },
     "scratchpad": {
         "enabled": true,
-        "max_chars": 16384    
+        "max_chars": 16384
     },
     "global_memory": false,
     "can_request_clarification": true,
     "metadata": {
         "version": "1.0",
-        "author": "list91",
-        "created_at": "",
-        "description": "Агент для ..."
+        "author": "system",
+        "created_at": "2025-10-29",
+        "description": "Дефолтный агент для qwen_client"
     }
 }
-    
