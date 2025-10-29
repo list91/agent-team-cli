@@ -1,7 +1,6 @@
 {
     "id": "qwen_agent",
     "role": "sub_agent",
-    "is_master": false,
     "prompts": [
         {
             "type": "system",
@@ -12,19 +11,19 @@
         "allowed_tools": [
             "*"
         ],
-        "max_execution_time_sec": 120,
-        "max_retries": 2
+        "max_execution_time_sec": 120
     },
     "scratchpad": {
         "enabled": true,
         "max_chars": 16384
     },
-    "global_memory": false,
     "can_request_clarification": true,
     "metadata": {
         "version": "1.0",
         "author": "system",
         "created_at": "2025-10-29",
         "description": "Дефолтный агент для qwen_client"
-    }
+    },
+    "is_master": false,
+    "global_memory": false
 }
