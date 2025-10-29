@@ -1,9 +1,0 @@
-name: "coder"
-description: "Generates code based on task requirements"
-capabilities:
-  - "code_generation"
-  - "file_writing"
-accepts_bridges: true
-default_tools:
-  - "file_write"
-  - "shell"
