@@ -1,0 +1,29 @@
+{
+    "id": "tr734821",
+    "role": "sub_agent",
+    "is_master": false,
+    "prompts": [
+        {
+            "type": "system",
+            "prompt": ""
+        }
+    ],
+    "execution": {
+        "allowed_tools": ["*"],
+        "max_execution_time_sec": 120,
+        "max_retries": 2
+    },
+    "scratchpad": {
+        "enabled": true,
+        "max_chars": 16384    
+    },
+    "global_memory": false,
+    "can_request_clarification": true,
+    "metadata": {
+        "version": "1.0",
+        "author": "list91",
+        "created_at": "",
+        "description": "Агент для ..."
+    }
+}
+    

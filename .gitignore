@@ -87,7 +87,7 @@ coverage.xml
 *.orig
 
 # Configuration
-config/
+# config/
 local_settings.py
 
 # Scratchpads and runtime files
