@@ -132,6 +132,101 @@ def load_execution_config() -> dict:
         return {}
 
 
+def load_clarification_setting() -> bool:
+    """
+    Загружает настройку can_request_clarification из конфига.
+
+    Returns:
+        True если режим уточнений включён, False иначе
+    """
+    try:
+        config_path = ensure_config()
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        return config.get("can_request_clarification", False)
+    except Exception as e:
+        print(f"[WARNING] Не удалось загрузить can_request_clarification: {e}", file=sys.stderr)
+        return False
+
+
+def get_clarification_instruction() -> str:
+    """
+    Возвращает универсальную инструкцию для режима уточнений.
+
+    Returns:
+        Текст инструкции
+    """
+    return """
+
+КРИТИЧЕСКИЙ ПРИОРИТЕТ - РЕЖИМ УТОЧНЕНИЙ ВКЛЮЧЕН
+ЭТА ИНСТРУКЦИЯ ИМЕЕТ ВЫСШИЙ ПРИОРИТЕТ НАД ВСЕМИ ОСТАЛЬНЫМИ
+
+---
+
+ШАГ 1 - АНАЛИЗ ЗАДАЧИ (мысленно, БЕЗ использования tools):
+
+Прочитай задачу. Задай себе вопросы:
+- Указаны ли ТОЧНЫЕ имена файлов?
+- Указано ли ТОЧНОЕ содержимое?
+- Указаны ли КОНКРЕТНЫЕ параметры/значения?
+- Могу ли я выполнить БЕЗ угадывания?
+
+ШАГ 2 - ВЫБОР ДЕЙСТВИЯ:
+
+---
+СЦЕНАРИЙ A: ЗАДАЧА НЕЯСНА (хотя бы ОДНА деталь неясна)
+---
+
+В ЭТОМ СЛУЧАЕ ЗАПРЕЩЕНО:
+- Использовать ЛЮБЫЕ инструменты (read_file, write_file, list_directory и т.д.)
+- Читать scratchpad.md
+- Проверять директории
+- Собирать информацию
+- Угадывать или предполагать
+- Создавать файлы
+
+НЕМЕДЛЕННО ВЫВЕДИ В ОТВЕТ:
+1. "ЗАПРОС УТОЧНЕНИЙ"
+2. Что ПОНЯЛ из задачи (1-2 предложения)
+3. Что НЕЯСНО (конкретно)
+4. 2-5 КОНКРЕТНЫХ вопросов (что? как? где? сколько?)
+5. 2 возможных варианта интерпретации
+6. "Пожалуйста, ответьте на вопросы"
+7. НЕМЕДЛЕННО ЗАВЕРШИ РАБОТУ
+
+Примеры неясных задач:
+- "настрой систему" - какую? параметры?
+- "создай конфиг" - формат? поля? значения?
+- "подготовь проект" - язык? фреймворк?
+- "создай список пользователей" - сколько? формат?
+- "создай 5 файлов" - имена? содержимое?
+- "настрой окружение" - для чего? переменные?
+
+---
+СЦЕНАРИЙ B: ЗАДАЧА ПОЛНОСТЬЮ ЯСНА
+---
+
+В ЭТОМ СЛУЧАЕ ОБЯЗАТЕЛЬНО:
+- Выполни задачу ИСПОЛЬЗУЯ ВСЕ НЕОБХОДИМЫЕ ИНСТРУМЕНТЫ
+- Читай scratchpad.md, пиши файлы, используй все доступные tools
+- Действуй как обычно, режим уточнений НЕ мешает выполнению ясных задач
+- НЕ запрашивай уточнений, просто делай работу
+
+Примеры ясных задач (выполняй БЕЗ уточнений):
+- "создай файл test.txt с текстом 'hello world'"
+- "создай файл config.json с содержимым: {\"port\": 8080}"
+- "создай 3 файла: a.txt, b.txt, c.txt - все с текстом 'test'"
+- "создай файл README.md с заголовком '# My Project'"
+
+---
+
+ВАЖНО: Режим уточнений НЕ блокирует выполнение ясных задач!
+Он только добавляет проверку ПЕРЕД началом работы.
+Если задача ясна - работай как обычно со всеми инструментами!
+"""
+
+
 def log_to_scratchpad(scratchpad_path: Path, message: str, status: str = "~") -> None:
     """
     Добавляет запись в scratchpad.md с timestamp.
@@ -258,9 +353,15 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
     if timeout is not None and timeout <= 0:
         timeout = None
 
-    # Формируем полный промпт: system + user
+    # Загружаем настройку режима уточнений
+    clarification_enabled = load_clarification_setting()
+
+    # Формируем полный промпт: system + clarification (если включено) + user
     if system_prompt:
-        full_prompt = f"{system_prompt}\n\n{'='*60}\n\n# ЗАДАЧА ОТ ПОЛЬЗОВАТЕЛЯ:\n\n{prompt}\n\n{'='*60}\n\nНАЧНИ ВЫПОЛНЕНИЕ ЗАДАЧИ СЕЙЧАС."
+        # Добавляем инструкцию уточнений если включено
+        clarification_instruction = get_clarification_instruction() if clarification_enabled else ""
+
+        full_prompt = f"{system_prompt}{clarification_instruction}\n\n{'='*60}\n\n# ЗАДАЧА ОТ ПОЛЬЗОВАТЕЛЯ:\n\n{prompt}\n\n{'='*60}\n\nНАЧНИ ВЫПОЛНЕНИЕ ЗАДАЧИ СЕЙЧАС."
     else:
         full_prompt = prompt
 
@@ -273,6 +374,10 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
         log_to_scratchpad(scratchpad_path, f"Таймаут выполнения: {timeout} секунд")
     else:
         log_to_scratchpad(scratchpad_path, "Таймаут выполнения: не установлен")
+    if clarification_enabled:
+        log_to_scratchpad(scratchpad_path, "Режим уточнений: ВКЛЮЧЁН")
+    else:
+        log_to_scratchpad(scratchpad_path, "Режим уточнений: отключён")
 
     # Сохраняем текущую директорию
     original_cwd = os.getcwd()
