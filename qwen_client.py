@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import uuid
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -27,12 +28,12 @@ def log_to_scratchpad(scratchpad_path: Path, message: str, status: str = "~") ->
         f.write(f"[{timestamp}] [{status}] {message}\n")
 
 
-def create_workspace() -> tuple[Path, Path]:
+def create_workspace() -> tuple[Path, Path, Path]:
     """
     Создаёт уникальную рабочую директорию для запуска.
 
     Returns:
-        Кортеж (путь к workdir, путь к scratchpad.md)
+        Кортеж (путь к workdir, путь к scratchpad.md, путь к live.log)
     """
     # Генерируем уникальный идентификатор запуска
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -48,17 +49,46 @@ def create_workspace() -> tuple[Path, Path]:
     scratchpad_path = (workdir / "scratchpad.md").resolve()
     scratchpad_path.touch()
 
-    return workdir, scratchpad_path
+    # Создаём live.log (абсолютный путь)
+    live_log_path = (workdir / "live.log").resolve()
+    live_log_path.touch()
+
+    return workdir, scratchpad_path, live_log_path
 
 
-def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, allowed_tools: bool = True, yolo: str = "json") -> int:
+def stream_output(pipe, live_log_path: Path, prefix: str = ""):
     """
-    Запускает qwen в изолированной рабочей директории.
+    Читает поток (stdout/stderr) построчно и выводит в консоль + live.log.
+
+    Args:
+        pipe: Поток для чтения (process.stdout или process.stderr)
+        live_log_path: Путь к live.log
+        prefix: Префикс для строк (например, "[STDERR] ")
+    """
+    try:
+        with open(live_log_path, "a", encoding="utf-8", errors="replace") as log_file:
+            for line in iter(pipe.readline, ""):
+                if line:
+                    # Вывод в консоль
+                    print(f"{prefix}{line}", end="", flush=True)
+                    # Запись в live.log
+                    log_file.write(f"{prefix}{line}")
+                    log_file.flush()
+    except Exception:
+        pass
+    finally:
+        pipe.close()
+
+
+def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: Path, allowed_tools: bool = True, yolo: str = "json") -> int:
+    """
+    Запускает qwen в изолированной рабочей директории с реал-тайм выводом.
 
     Args:
         prompt: Промпт для qwen
         workdir: Рабочая директория
         scratchpad_path: Путь к scratchpad.md
+        live_log_path: Путь к live.log
         allowed_tools: Использовать флаг --allowed-tools (по умолчанию True)
         yolo: Формат вывода (по умолчанию json)
 
@@ -87,36 +117,53 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, allowed_tools: b
             cmd.extend(["--yolo", yolo])
 
         log_to_scratchpad(scratchpad_path, f"Выполнение команды: {' '.join(cmd)}")
+        log_to_scratchpad(scratchpad_path, f"Live лог: {live_log_path}")
 
-        # Запускаем qwen (shell=True для Windows .cmd)
-        result = subprocess.run(
+        # Запускаем qwen с реал-тайм выводом
+        process = subprocess.Popen(
             cmd,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
-            shell=True
+            errors="replace",
+            shell=True,
+            cwd=workdir
         )
 
+        # Создаём потоки для чтения stdout и stderr
+        stdout_thread = threading.Thread(
+            target=stream_output,
+            args=(process.stdout, live_log_path, "")
+        )
+        stderr_thread = threading.Thread(
+            target=stream_output,
+            args=(process.stderr, live_log_path, "[STDERR] ")
+        )
+
+        # Запускаем потоки
+        stdout_thread.start()
+        stderr_thread.start()
+
+        # Ждём завершения процесса
+        returncode = process.wait()
+
+        # Ждём завершения потоков
+        stdout_thread.join()
+        stderr_thread.join()
+
         # Логируем результат
-        if result.returncode == 0:
+        if returncode == 0:
             log_to_scratchpad(scratchpad_path, "Успешно выполнено", status="X")
 
             # Логируем созданные файлы
-            created_files = [f.name for f in workdir.iterdir() if f.is_file() and f.name != "scratchpad.md"]
+            created_files = [f.name for f in workdir.iterdir() if f.is_file() and f.name not in ["scratchpad.md", "live.log"]]
             if created_files:
                 log_to_scratchpad(scratchpad_path, f"Созданы файлы: {', '.join(created_files)}", status="X")
-
-            # Логируем stdout если есть
-            if result.stdout:
-                log_to_scratchpad(scratchpad_path, f"Вывод:\n{result.stdout}")
         else:
-            log_to_scratchpad(scratchpad_path, f"Ошибка выполнения (код: {result.returncode})", status="!")
+            log_to_scratchpad(scratchpad_path, f"Ошибка выполнения (код: {returncode})", status="!")
 
-            # Логируем stderr
-            if result.stderr:
-                log_to_scratchpad(scratchpad_path, f"Ошибка:\n{result.stderr}", status="!")
-
-        return result.returncode
+        return returncode
 
     except FileNotFoundError:
         error_msg = "Команда 'qwen' не найдена. Убедитесь, что qwen установлен и доступен в PATH."
@@ -173,22 +220,26 @@ def main():
     args = parser.parse_args()
 
     # Создаём рабочее пространство
-    workdir, scratchpad_path = create_workspace()
+    workdir, scratchpad_path, live_log_path = create_workspace()
 
     print(f"Рабочая директория: {workdir}")
     print(f"Scratchpad: {scratchpad_path}")
+    print(f"Live лог: {live_log_path}")
     print(f"Выполняется задача: {args.prompt}")
     print("-" * 60)
+    print()
 
     # Запускаем qwen
     exit_code = run_qwen(
         prompt=args.prompt,
         workdir=workdir,
         scratchpad_path=scratchpad_path,
+        live_log_path=live_log_path,
         allowed_tools=args.allowed_tools,
         yolo=args.yolo
     )
 
+    print()
     print("-" * 60)
     if exit_code == 0:
         print(f"[OK] Успешно выполнено. Результаты в: {workdir}")
