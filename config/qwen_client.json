@@ -14,12 +14,12 @@
         "max_execution_time_sec": 120
     },
     "can_request_clarification": true,
+    "global_memory": false,
     "metadata": {
         "version": "1.0",
         "author": "system",
         "created_at": "2025-10-29",
         "description": "Дефолтный агент для qwen_client"
     },
-    "is_master": false,
-    "global_memory": false
+    "is_master": false
 }
