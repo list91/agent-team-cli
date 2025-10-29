@@ -11,7 +11,7 @@
         "allowed_tools": [
             "*"
         ],
-        "max_execution_time_sec": 120
+        "max_execution_time_sec": 55000
     },
     "scratchpad": {
         "enabled": true,

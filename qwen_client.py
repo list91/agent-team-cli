@@ -11,6 +11,7 @@ import subprocess
 import sys
 import uuid
 import threading
+import psutil
 from datetime import datetime
 from pathlib import Path
 
@@ -113,6 +114,24 @@ def load_system_prompt() -> str:
         return ""
 
 
+def load_execution_config() -> dict:
+    """
+    Загружает секцию execution из конфига.
+
+    Returns:
+        Словарь с настройками execution (или пустой словарь при ошибке)
+    """
+    try:
+        config_path = ensure_config()
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        return config.get("execution", {})
+    except Exception as e:
+        print(f"[WARNING] Не удалось загрузить execution config: {e}", file=sys.stderr)
+        return {}
+
+
 def log_to_scratchpad(scratchpad_path: Path, message: str, status: str = "~") -> None:
     """
     Добавляет запись в scratchpad.md с timestamp.
@@ -154,6 +173,39 @@ def create_workspace() -> tuple[Path, Path, Path]:
     live_log_path.touch()
 
     return workdir, scratchpad_path, live_log_path
+
+
+def kill_process_tree(pid: int, scratchpad_path: Path) -> None:
+    """
+    Убивает процесс и все его дочерние процессы.
+
+    Args:
+        pid: ID процесса для убийства
+        scratchpad_path: Путь к scratchpad.md для логирования
+    """
+    try:
+        parent = psutil.Process(pid)
+        children = parent.children(recursive=True)
+
+        # Логируем информацию о дереве процессов
+        log_to_scratchpad(scratchpad_path, f"Убиваем процесс {pid} и {len(children)} дочерних процессов", status="!")
+
+        # Убиваем дочерние процессы
+        for child in children:
+            try:
+                log_to_scratchpad(scratchpad_path, f"  Убиваем дочерний процесс {child.pid} ({child.name()})", status="!")
+                child.kill()
+            except psutil.NoSuchProcess:
+                pass
+
+        # Убиваем родительский процесс
+        parent.kill()
+        log_to_scratchpad(scratchpad_path, f"Процесс {pid} убит", status="!")
+
+    except psutil.NoSuchProcess:
+        log_to_scratchpad(scratchpad_path, f"Процесс {pid} уже не существует", status="!")
+    except Exception as e:
+        log_to_scratchpad(scratchpad_path, f"Ошибка при убийстве процесса {pid}: {e}", status="!")
 
 
 def stream_output(pipe, live_log_path: Path, prefix: str = ""):
@@ -198,6 +250,14 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
     # Загружаем system prompt из конфига
     system_prompt = load_system_prompt()
 
+    # Загружаем execution config для таймаута
+    execution_config = load_execution_config()
+    timeout = execution_config.get("max_execution_time_sec", None)
+
+    # Если timeout=0 или отрицательный, считаем как None (без ограничения)
+    if timeout is not None and timeout <= 0:
+        timeout = None
+
     # Формируем полный промпт: system + user
     if system_prompt:
         full_prompt = f"{system_prompt}\n\n{'='*60}\n\n# ЗАДАЧА ОТ ПОЛЬЗОВАТЕЛЯ:\n\n{prompt}\n\n{'='*60}\n\nНАЧНИ ВЫПОЛНЕНИЕ ЗАДАЧИ СЕЙЧАС."
@@ -209,6 +269,10 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
     log_to_scratchpad(scratchpad_path, f"Рабочая директория: {workdir}")
     if system_prompt:
         log_to_scratchpad(scratchpad_path, "System prompt загружен из config/qwen_client.json")
+    if timeout:
+        log_to_scratchpad(scratchpad_path, f"Таймаут выполнения: {timeout} секунд")
+    else:
+        log_to_scratchpad(scratchpad_path, "Таймаут выполнения: не установлен")
 
     # Сохраняем текущую директорию
     original_cwd = os.getcwd()
@@ -261,21 +325,60 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
         stdout_thread.start()
         stderr_thread.start()
 
-        # Ждём завершения процесса
-        returncode = process.wait()
+        # Ждём завершения процесса с таймаутом
+        try:
+            returncode = process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            # Создаём timeout_info.log с детальной информацией
+            timeout_info_path = workdir / "timeout_info.log"
+            with open(timeout_info_path, "w", encoding="utf-8") as f:
+                f.write(f"TIMEOUT OCCURRED\n")
+                f.write(f"{'='*60}\n\n")
+                f.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Configured timeout: {timeout} seconds\n")
+                f.write(f"User prompt: {prompt}\n")
+                f.write(f"Process PID: {process.pid}\n")
+                f.write(f"Working directory: {workdir}\n")
+                f.write(f"\n{'='*60}\n\n")
+                f.write("This file contains information about the timeout event.\n")
+                f.write("Check live.log for the full output captured before timeout.\n")
+                f.write("Check scratchpad.md for the agent's progress before timeout.\n")
+                f.write(f"\n{'='*60}\n")
+
+            # Логируем в scratchpad
+            log_to_scratchpad(scratchpad_path, f"ТАЙМАУТ: процесс превысил лимит {timeout} секунд", status="!")
+            log_to_scratchpad(scratchpad_path, f"Сохранена информация о таймауте в timeout_info.log", status="!")
+
+            # Убиваем дерево процессов
+            kill_process_tree(process.pid, scratchpad_path)
+
+            # Ждём завершения процесса после kill
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                # Если процесс не завершился за 5 секунд после kill
+                log_to_scratchpad(scratchpad_path, "Процесс не завершился после kill за 5 секунд", status="!")
+
+            returncode = -1  # Код ошибки для таймаута
 
         # Ждём завершения потоков
-        stdout_thread.join()
-        stderr_thread.join()
+        stdout_thread.join(timeout=10)
+        stderr_thread.join(timeout=10)
+
+        # Проверяем, завершились ли потоки
+        if stdout_thread.is_alive() or stderr_thread.is_alive():
+            log_to_scratchpad(scratchpad_path, "Потоки вывода не завершились за 10 секунд", status="!")
 
         # Логируем результат
         if returncode == 0:
             log_to_scratchpad(scratchpad_path, "Успешно выполнено", status="X")
 
             # Логируем созданные файлы
-            created_files = [f.name for f in workdir.iterdir() if f.is_file() and f.name not in ["scratchpad.md", "live.log"]]
+            created_files = [f.name for f in workdir.iterdir() if f.is_file() and f.name not in ["scratchpad.md", "live.log", "timeout_info.log"]]
             if created_files:
                 log_to_scratchpad(scratchpad_path, f"Созданы файлы: {', '.join(created_files)}", status="X")
+        elif returncode == -1:
+            log_to_scratchpad(scratchpad_path, "Выполнение прервано по таймауту", status="!")
         else:
             log_to_scratchpad(scratchpad_path, f"Ошибка выполнения (код: {returncode})", status="!")
 
