@@ -150,6 +150,199 @@ def load_clarification_setting() -> bool:
         return False
 
 
+def load_global_memory_setting() -> bool:
+    """
+    Загружает настройку global_memory из конфига.
+
+    Returns:
+        True если global memory включена, False иначе
+    """
+    try:
+        config_path = ensure_config()
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        return config.get("global_memory", False)
+    except Exception as e:
+        print(f"[WARNING] Не удалось загрузить global_memory: {e}", file=sys.stderr)
+        return False
+
+
+def get_global_memory_config() -> dict:
+    """
+    Загружает конфигурацию global_memory из конфига.
+
+    Returns:
+        Словарь с настройками: max_sessions, memory_file_name
+    """
+    try:
+        config_path = ensure_config()
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        # Дефолтные значения
+        return {
+            "max_sessions": config.get("max_memory_sessions", 10),
+            "memory_file_name": config.get("memory_file_name", "global_memory.json")
+        }
+    except Exception as e:
+        print(f"[WARNING] Не удалось загрузить конфиг global_memory: {e}", file=sys.stderr)
+        return {"max_sessions": 10, "memory_file_name": "global_memory.json"}
+
+
+def get_global_memory_path() -> Path:
+    """
+    Возвращает путь к файлу global_memory.
+
+    Returns:
+        Абсолютный путь к config/global_memory.json (или другому имени из конфига)
+    """
+    memory_config = get_global_memory_config()
+    # Используем абсолютный путь относительно места запуска скрипта
+    script_dir = Path(__file__).parent
+    config_dir = script_dir / "config"
+    return config_dir / memory_config["memory_file_name"]
+
+
+def load_global_memory() -> list:
+    """
+    Загружает историю сессий из global_memory.
+
+    Returns:
+        Список последних N сессий (N из конфига max_memory_sessions)
+    """
+    memory_path = get_global_memory_path()
+    memory_config = get_global_memory_config()
+    max_sessions = memory_config["max_sessions"]
+
+    # Если файла нет - создаем пустой
+    if not memory_path.exists():
+        initial_data = {
+            "sessions": [],
+            "last_updated": datetime.now().isoformat(),
+            "total_sessions": 0
+        }
+        with open(memory_path, "w", encoding="utf-8") as f:
+            json.dump(initial_data, f, ensure_ascii=False, indent=2)
+        return []
+
+    try:
+        with open(memory_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        sessions = data.get("sessions", [])
+        # Возвращаем последние N сессий
+        return sessions[-max_sessions:] if len(sessions) > max_sessions else sessions
+    except Exception as e:
+        print(f"[WARNING] Не удалось загрузить global_memory: {e}", file=sys.stderr)
+        return []
+
+
+def format_memory_for_prompt(sessions: list) -> str:
+    """
+    Форматирует историю сессий для вставки в промпт.
+
+    Args:
+        sessions: Список сессий из global_memory
+
+    Returns:
+        Отформатированная строка с историей
+    """
+    if not sessions:
+        return ""
+
+    lines = ["---", "ИСТОРИЯ ПРЕДЫДУЩИХ СЕССИЙ:", ""]
+
+    for i, session in enumerate(sessions, 1):
+        timestamp = session.get("timestamp", "неизвестно")
+        user_prompt = session.get("user_prompt", "")
+        agent_response = session.get("agent_response", "")
+        status = session.get("status", "unknown")
+        exec_time = session.get("execution_time_sec", 0)
+
+        # Сокращаем длинные ответы
+        if len(agent_response) > 200:
+            agent_response = agent_response[:200] + "..."
+
+        lines.append(f"[Сессия {i}] {timestamp} | Статус: {status} | Время: {exec_time}с")
+        lines.append(f"Задача: {user_prompt}")
+        lines.append(f"Результат: {agent_response}")
+        lines.append("")
+
+    lines.append("---")
+    return "\n".join(lines)
+
+
+def read_agent_response(live_log_path: Path, max_lines: int = 50) -> str:
+    """
+    Читает ответ агента из live.log.
+
+    Args:
+        live_log_path: Путь к live.log
+        max_lines: Максимум строк для чтения (дефолт из конфига или 50)
+
+    Returns:
+        Текст ответа агента (без stderr)
+    """
+    try:
+        if not live_log_path.exists():
+            return "[live.log не найден]"
+
+        with open(live_log_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        # Фильтруем stderr строки
+        response_lines = [line for line in lines if not line.startswith("[STDERR]")]
+
+        # Берем последние max_lines строк
+        response_lines = response_lines[-max_lines:] if len(response_lines) > max_lines else response_lines
+
+        return "".join(response_lines).strip()
+    except Exception as e:
+        return f"[Ошибка чтения live.log: {e}]"
+
+
+def save_global_memory(user_prompt: str, agent_response: str, status: str, exec_time: float) -> None:
+    """
+    Сохраняет новую сессию в global_memory.
+
+    Args:
+        user_prompt: Промпт пользователя
+        agent_response: Ответ агента
+        status: Статус выполнения (success/error/timeout)
+        exec_time: Время выполнения в секундах
+    """
+    memory_path = get_global_memory_path()
+
+    try:
+        # Загружаем существующие данные
+        if memory_path.exists():
+            with open(memory_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        else:
+            data = {"sessions": [], "total_sessions": 0}
+
+        # Добавляем новую сессию
+        new_session = {
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "user_prompt": user_prompt,
+            "agent_response": agent_response,
+            "status": status,
+            "execution_time_sec": round(exec_time, 2)
+        }
+
+        data["sessions"].append(new_session)
+        data["total_sessions"] = len(data["sessions"])
+        data["last_updated"] = datetime.now().isoformat()
+
+        # Сохраняем обратно
+        with open(memory_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+    except Exception as e:
+        print(f"[ERROR] Не удалось сохранить в global_memory: {e}", file=sys.stderr)
+
+
 def get_clarification_instruction() -> str:
     """
     Возвращает универсальную инструкцию для режима уточнений.
@@ -342,6 +535,10 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
     Returns:
         Exit code (0=успех, 1=ошибка)
     """
+    # Фиксируем время начала для подсчета exec_time
+    import time
+    start_time = time.time()
+
     # Загружаем system prompt из конфига
     system_prompt = load_system_prompt()
 
@@ -356,12 +553,24 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
     # Загружаем настройку режима уточнений
     clarification_enabled = load_clarification_setting()
 
-    # Формируем полный промпт: system + clarification (если включено) + user
+    # Загружаем настройку global_memory
+    global_memory_enabled = load_global_memory_setting()
+    memory_sessions = []
+
+    if global_memory_enabled:
+        memory_sessions = load_global_memory()
+
+    # Формируем полный промпт: system + clarification (если включено) + memory (если включено) + user
     if system_prompt:
         # Добавляем инструкцию уточнений если включено
         clarification_instruction = get_clarification_instruction() if clarification_enabled else ""
 
-        full_prompt = f"{system_prompt}{clarification_instruction}\n\n{'='*60}\n\n# ЗАДАЧА ОТ ПОЛЬЗОВАТЕЛЯ:\n\n{prompt}\n\n{'='*60}\n\nНАЧНИ ВЫПОЛНЕНИЕ ЗАДАЧИ СЕЙЧАС."
+        # Добавляем историю из global_memory если включено
+        memory_context = ""
+        if global_memory_enabled and memory_sessions:
+            memory_context = format_memory_for_prompt(memory_sessions)
+
+        full_prompt = f"{system_prompt}{clarification_instruction}\n\n{memory_context}\n\n{'='*60}\n\n# ЗАДАЧА ОТ ПОЛЬЗОВАТЕЛЯ:\n\n{prompt}\n\n{'='*60}\n\nНАЧНИ ВЫПОЛНЕНИЕ ЗАДАЧИ СЕЙЧАС."
     else:
         full_prompt = prompt
 
@@ -378,6 +587,10 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
         log_to_scratchpad(scratchpad_path, "Режим уточнений: ВКЛЮЧЁН")
     else:
         log_to_scratchpad(scratchpad_path, "Режим уточнений: отключён")
+    if global_memory_enabled:
+        log_to_scratchpad(scratchpad_path, f"Global memory: ВКЛЮЧЕНА (загружено сессий: {len(memory_sessions)})")
+    else:
+        log_to_scratchpad(scratchpad_path, "Global memory: отключена")
 
     # Сохраняем текущую директорию
     original_cwd = os.getcwd()
@@ -487,18 +700,38 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
         else:
             log_to_scratchpad(scratchpad_path, f"Ошибка выполнения (код: {returncode})", status="!")
 
+        # Сохраняем сессию в global_memory (если включено)
+        if global_memory_enabled:
+            exec_time = time.time() - start_time
+            agent_response = read_agent_response(live_log_path)
+            status = "success" if returncode == 0 else ("timeout" if returncode == -1 else "error")
+            save_global_memory(prompt, agent_response, status, exec_time)
+            log_to_scratchpad(scratchpad_path, "Сессия сохранена в global memory")
+
         return returncode
 
     except FileNotFoundError:
         error_msg = "Команда 'qwen' не найдена. Убедитесь, что qwen установлен и доступен в PATH."
         log_to_scratchpad(scratchpad_path, error_msg, status="!")
         print(f"ОШИБКА: {error_msg}", file=sys.stderr)
+
+        # Сохраняем сессию с ошибкой в global_memory (если включено)
+        if global_memory_enabled:
+            exec_time = time.time() - start_time
+            save_global_memory(prompt, error_msg, "error", exec_time)
+
         return 1
 
     except Exception as e:
         error_msg = f"Непредвиденная ошибка: {str(e)}"
         log_to_scratchpad(scratchpad_path, error_msg, status="!")
         print(f"ОШИБКА: {error_msg}", file=sys.stderr)
+
+        # Сохраняем сессию с ошибкой в global_memory (если включено)
+        if global_memory_enabled:
+            exec_time = time.time() - start_time
+            save_global_memory(prompt, error_msg, "error", exec_time)
+
         return 1
 
     finally:

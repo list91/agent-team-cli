@@ -14,7 +14,9 @@
         "max_execution_time_sec": 120
     },
     "can_request_clarification": true,
-    "global_memory": false,
+    "global_memory": true,
+    "max_memory_sessions": 10,
+    "memory_file_name": "global_memory.json",
     "metadata": {
         "version": "1.0",
         "author": "system",
