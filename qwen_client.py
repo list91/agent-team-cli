@@ -12,6 +12,7 @@ import sys
 import uuid
 import threading
 import psutil
+import yaml
 from datetime import datetime
 from pathlib import Path
 
@@ -348,6 +349,85 @@ def save_global_memory(user_prompt: str, agent_response: str, status: str, exec_
         print(f"[ERROR] Не удалось сохранить в global_memory: {e}", file=sys.stderr)
 
 
+def parse_team_yaml() -> dict:
+    """
+    Парсит team.yaml и возвращает информацию о команде агентов.
+
+    Returns:
+        Словарь с информацией о команде:
+        {
+            "team_id": str,
+            "default_workspace": str,
+            "agents": [
+                {
+                    "id": str,
+                    "config_path": str,
+                    "workspace_path": str (или "default"),
+                    "description": str (из конфига агента)
+                }
+            ]
+        }
+    """
+    script_dir = Path(__file__).parent
+    team_yaml_path = script_dir / "agents" / "team.yaml"
+
+    if not team_yaml_path.exists():
+        return {
+            "team_id": "unknown",
+            "default_workspace": "agents-space/team_workspace",
+            "agents": []
+        }
+
+    try:
+        with open(team_yaml_path, "r", encoding="utf-8") as f:
+            team_config = yaml.safe_load(f)
+
+        result = {
+            "team_id": team_config.get("team_id", "unknown"),
+            "default_workspace": team_config.get("default_workspace_path", "agents-space/team_workspace"),
+            "agents": []
+        }
+
+        # Парсим каждого агента
+        for agent in team_config.get("agents", []):
+            agent_id = agent.get("id", "unknown")
+            config_path = agent.get("config_file_path", "")
+            use_default = agent.get("use_workspace_default", True)
+            custom_workspace = agent.get("workspace_path", "")
+
+            # Читаем описание из конфига агента если есть
+            description = "Нет описания"
+            if config_path:
+                agent_config_path = script_dir / config_path
+                if agent_config_path.exists():
+                    try:
+                        with open(agent_config_path, "r", encoding="utf-8") as af:
+                            agent_cfg = json.load(af)
+                            description = agent_cfg.get("metadata", {}).get("description", "Нет описания")
+                    except:
+                        pass
+
+            # Определяем workspace
+            workspace = "default" if use_default else (custom_workspace or "default")
+
+            result["agents"].append({
+                "id": agent_id,
+                "config_path": config_path,
+                "workspace_path": workspace,
+                "description": description
+            })
+
+        return result
+
+    except Exception as e:
+        print(f"[ERROR] Не удалось прочитать team.yaml: {e}", file=sys.stderr)
+        return {
+            "team_id": "unknown",
+            "default_workspace": "agents-space/team_workspace",
+            "agents": []
+        }
+
+
 def get_clarification_instruction() -> str:
     """
     Возвращает универсальную инструкцию для режима уточнений.
@@ -565,7 +645,17 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
     if global_memory_enabled:
         memory_sessions = load_global_memory()
 
-    # Формируем полный промпт: system + clarification (если включено) + memory (если включено) + user
+    # Проверяем is_master для добавления информации о команде
+    config_path = ensure_config()
+    is_master = False
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+        is_master = config.get("is_master", False)
+    except:
+        pass
+
+    # Формируем полный промпт: system + clarification (если включено) + memory (если включено) + team (если мастер) + user
     if system_prompt:
         # Добавляем инструкцию уточнений если включено
         clarification_instruction = get_clarification_instruction() if clarification_enabled else ""
@@ -575,7 +665,21 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
         if global_memory_enabled and memory_sessions:
             memory_context = format_memory_for_prompt(memory_sessions)
 
-        full_prompt = f"{system_prompt}{clarification_instruction}\n\n{memory_context}\n\n{'='*60}\n\n# ЗАДАЧА ОТ ПОЛЬЗОВАТЕЛЯ:\n\n{prompt}\n\n{'='*60}\n\nНАЧНИ ВЫПОЛНЕНИЕ ЗАДАЧИ СЕЙЧАС."
+        # Добавляем информацию о команде если мастер
+        team_context = ""
+        if is_master:
+            team_info = parse_team_yaml()
+            team_context = "\n\n---\n\nИНФОРМАЦИЯ О КОМАНДЕ (результат parse_team_config):\n\n"
+            team_context += f"Team ID: {team_info['team_id']}\n"
+            team_context += f"Default Workspace: {team_info['default_workspace']}\n\n"
+            team_context += "Доступные агенты:\n"
+            for agent in team_info['agents']:
+                team_context += f"- {agent['id']}: {agent['description']}\n"
+                team_context += f"  Workspace: {agent['workspace_path']}\n"
+                team_context += f"  Config: {agent['config_path']}\n\n"
+            team_context += "---\n"
+
+        full_prompt = f"{system_prompt}{clarification_instruction}\n\n{memory_context}{team_context}\n\n{'='*60}\n\n# ЗАДАЧА ОТ ПОЛЬЗОВАТЕЛЯ:\n\n{prompt}\n\n{'='*60}\n\nНАЧНИ ВЫПОЛНЕНИЕ ЗАДАЧИ СЕЙЧАС."
     else:
         full_prompt = prompt
 

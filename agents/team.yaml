@@ -1,41 +1,33 @@
-team_id: fwe3dwe2jiuefjr4
+team_id: dev_team_001
 
-# default_workspace_path: agents-space/team_run_tyqwge6712
-default_workspace_path: 
+# Дефолтная рабочая директория для всей команды
+default_workspace_path: agents-space/team_workspace
 
 agents:
-  - id: agent1
-    
-    # config_file_path: config/agent1.json
-    config_file_path: 
-    
-    # workspace_path: agents-space/n_tyqwge6712_adasdwq
-    workspace_path: 
-    
+  # Агент-исследователь: поиск и анализ информации
+  - id: researcher
+    config_file_path: agents/researcher/qwen_client.json
+    workspace_path:
     use_workspace_default: true
 
-  - id: agent2123
-    
-    # config_file_path: config/agent1.json
-    config_file_path: 
-    
-    # workspace_path: agents-space/n_tyqwge6712_adasdwq
-    workspace_path: 
-    
-    use_workspace_default: false
-
-  - id: agent14123
-    
-    # config_file_path: config/agent1.json
-    config_file_path: 
-    
-    # workspace_path: agents-space/n_tyqwge6712_adasdwq
-    workspace_path: 
-    
+  # Агент-программист: написание кода и создание файлов
+  - id: coder
+    config_file_path: agents/coder/qwen_client.json
+    workspace_path:
     use_workspace_default: true
 
+  # Агент-тестировщик: проверка работоспособности и тестирование
+  - id: tester
+    config_file_path: agents/tester/qwen_client.json
+    workspace_path:
+    use_workspace_default: true
 
 metadata:
   version: "1.0"
   created_at: "2025-11-06"
-  description: Простая команда из нескольких агентов
+  description: Команда из 3 суб-агентов для разработки - исследователь, программист, тестировщик
+  team_structure:
+    researcher: Поиск информации, анализ, создание отчетов
+    coder: Написание кода, создание файлов
+    tester: Тестирование, проверка работоспособности
+  note: Мастер-агент находится отдельно в agents/master-agent/ и координирует команду
