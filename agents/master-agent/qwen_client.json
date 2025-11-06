@@ -23,5 +23,5 @@
         "created_at": "2025-10-29",
         "description": "Дефолтный агент для qwen_client"
     },
-    "is_master": false
+    "is_master": true
 }

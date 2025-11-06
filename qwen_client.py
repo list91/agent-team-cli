@@ -21,10 +21,10 @@ def ensure_config() -> Path:
     Проверяет наличие конфига, создаёт дефолтный если не существует.
 
     Returns:
-        Путь к config/qwen_client.json
+        Путь к agents/master-agent/qwen_client.json
     """
-    config_dir = Path("config")
-    config_dir.mkdir(exist_ok=True)
+    config_dir = Path("agents/master-agent")
+    config_dir.mkdir(parents=True, exist_ok=True)
 
     config_path = config_dir / "qwen_client.json"
 
@@ -195,12 +195,12 @@ def get_global_memory_path() -> Path:
     Возвращает путь к файлу global_memory.
 
     Returns:
-        Абсолютный путь к config/global_memory.json (или другому имени из конфига)
+        Абсолютный путь к agents/master-agent/global_memory.json (или другому имени из конфига)
     """
     memory_config = get_global_memory_config()
     # Используем абсолютный путь относительно места запуска скрипта
     script_dir = Path(__file__).parent
-    config_dir = script_dir / "config"
+    config_dir = script_dir / "agents" / "master-agent"
     return config_dir / memory_config["memory_file_name"]
 
 
@@ -217,6 +217,8 @@ def load_global_memory() -> list:
 
     # Если файла нет - создаем пустой
     if not memory_path.exists():
+        # Создаем директорию если не существует
+        memory_path.parent.mkdir(parents=True, exist_ok=True)
         initial_data = {
             "sessions": [],
             "last_updated": datetime.now().isoformat(),
@@ -315,6 +317,9 @@ def save_global_memory(user_prompt: str, agent_response: str, status: str, exec_
     memory_path = get_global_memory_path()
 
     try:
+        # Создаем директорию если не существует
+        memory_path.parent.mkdir(parents=True, exist_ok=True)
+
         # Загружаем существующие данные
         if memory_path.exists():
             with open(memory_path, "r", encoding="utf-8") as f:
@@ -775,6 +780,20 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # Загружаем конфиг и проверяем is_master
+    config_path = ensure_config()
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    is_master = config.get("is_master", False)
+
+    # Если is_master=true, принудительно отключаем allowed_tools и yolo
+    if is_master:
+        args.allowed_tools = False
+        args.yolo = None
+        print("[INFO] Режим MASTER активен: запуск БЕЗ флагов --allowed-tools и --yolo (доступ к редактированию ЗАПРЕЩЕН)")
+        print()
 
     # Создаём рабочее пространство
     workdir, scratchpad_path, live_log_path = create_workspace()
