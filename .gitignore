@@ -130,3 +130,12 @@ Thumbs.db.qwen_temp/
 
 agents-space
 global_memory.json
+
+# Test reports
+reports/
+
+monitor_tests.sh
+analyze_tests.py
+analyze_tests_simple.py
+analysis_result.txt
+tests\boundary_test_cases.md

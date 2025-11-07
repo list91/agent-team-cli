@@ -24,7 +24,9 @@ def ensure_config() -> Path:
     Returns:
         Путь к agents/master-agent/qwen_client.json
     """
-    config_dir = Path("agents/master-agent")
+    # Используем абсолютный путь относительно места расположения скрипта
+    script_dir = Path(__file__).parent
+    config_dir = script_dir / "agents" / "master-agent"
     config_dir.mkdir(parents=True, exist_ok=True)
 
     config_path = config_dir / "qwen_client.json"
@@ -672,7 +674,8 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
             team_context = "\n\n---\n\nИНФОРМАЦИЯ О КОМАНДЕ (результат parse_team_config):\n\n"
             team_context += f"Team ID: {team_info['team_id']}\n"
             team_context += f"Default Workspace: {team_info['default_workspace']}\n\n"
-            team_context += "Доступные агенты:\n"
+            # Добавляем заголовок, точно соответствующий примеру в system prompt
+            team_context += "Список агентов команды (из ИНФОРМАЦИИ О КОМАНДЕ):\n"
             for agent in team_info['agents']:
                 team_context += f"- {agent['id']}: {agent['description']}\n"
                 team_context += f"  Workspace: {agent['workspace_path']}\n"
@@ -700,6 +703,15 @@ def run_qwen(prompt: str, workdir: Path, scratchpad_path: Path, live_log_path: P
         log_to_scratchpad(scratchpad_path, f"Global memory: ВКЛЮЧЕНА (загружено сессий: {len(memory_sessions)})")
     else:
         log_to_scratchpad(scratchpad_path, "Global memory: отключена")
+
+    # Сохраняем full_prompt для debug
+    full_prompt_log_path = workdir / "full_prompt.txt"
+    try:
+        with open(full_prompt_log_path, "w", encoding="utf-8") as f:
+            f.write(full_prompt)
+        log_to_scratchpad(scratchpad_path, f"Full prompt сохранён: {full_prompt_log_path.name}")
+    except Exception as e:
+        log_to_scratchpad(scratchpad_path, f"Не удалось сохранить full_prompt: {e}", status="!")
 
     # Сохраняем текущую директорию
     original_cwd = os.getcwd()
@@ -905,7 +917,13 @@ def main():
     print(f"Рабочая директория: {workdir}")
     print(f"Scratchpad: {scratchpad_path}")
     print(f"Live лог: {live_log_path}")
-    print(f"Выполняется задача: {args.prompt}")
+    # Безопасный вывод промпта с эмодзи на Windows
+    try:
+        print(f"Выполняется задача: {args.prompt}")
+    except UnicodeEncodeError:
+        # Заменяем непечатаемые символы на ? для совместимости с Windows консолью
+        safe_prompt = args.prompt.encode('ascii', errors='replace').decode('ascii')
+        print(f"Выполняется задача: {safe_prompt}")
     print("-" * 60)
     print()
 
