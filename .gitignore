@@ -130,10 +130,11 @@ Thumbs.db.qwen_temp/
 
 agents-space
 global_memory.json
-
+manual_test_*.txt
+parser*.txt
 # Test reports
 reports/
-
+2025-11-07-this-session-is-being-continued-from-a-previous-co.txt
 monitor_tests.sh
 analyze_tests.py
 analyze_tests_simple.py
